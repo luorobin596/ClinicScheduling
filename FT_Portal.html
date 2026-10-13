@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <style>
+    body { font-family: 'Microsoft JhengHei', sans-serif; padding: 15px; background-color: #f0f2f5; color: #333; }
+    .container { max-width: 500px; margin: auto; background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .view-step { display: none; }
+    .active { display: block; }
+    .header { position: relative; text-align: center; margin-bottom: 20px; border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; }
+    h2, h3 { color: #1a73e8; margin: 10px 0; }
+    
+    .form-group { margin: 30px 0; }
+    select { width: 100%; padding: 15px; font-size: 18px; border: 2px solid #ddd; border-radius: 8px; }
+
+    /* 日曆樣式 */
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; background-color: #eee; border: 1px solid #ddd; }
+    .day-header { text-align: center; font-weight: bold; padding: 10px 0; background: #f8f9fa; font-size: 14px; }
+    .day-cell { min-height: 85px; background: white; padding: 4px; cursor: pointer; display: flex; flex-direction: column; }
+    .day-num { font-size: 14px; color: #555; font-weight: bold; }
+    
+    /* 週日顏色：與 header 相同 */
+    .sunday-cell { background-color: #f8f9fa !important; cursor: not-allowed; color: #ccc; }
+
+    /* 標籤樣式 */
+    .my-status { font-size: 11px; font-weight: bold; text-align: center; border-radius: 4px; padding: 2px; display: none; margin-bottom: 2px; }
+    .my-status.show { display: block; }
+    .bg-off { background-color: #ffebee; border: 1px solid #fad2cf; color: #d93025; } 
+    .bg-fixed { background-color: #fffde7; border: 1px solid #fff59d; color: #856404; }
+
+    .others-container { display: flex; flex-direction: column; gap: 2px; }
+    .other-tag { font-size: 10px; border-radius: 3px; padding: 1px 2px; text-align: center; }
+    .others-off { background-color: #ffebee; color: #d93025; border: 1px solid #fad2cf; }
+    .others-fixed { background-color: #fffde7; color: #856404; border: 1px solid #fff59d; }
+
+    /* 右上角切換按鈕 */
+    .btn-switch { position: absolute; top: 0; right: 0; background: #f8f9fa; border: 1px solid #ddd; color: #888; font-size: 11px; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+
+    .btn-main { background: #1a73e8; color: white; width: 100%; padding: 15px; border-radius: 8px; border: none; font-size: 18px; cursor: pointer; }
+    
+    /* Modal 彈窗美化 */
+    #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; backdrop-filter: blur(2px); }
+
+    #modal { 
+    display: none; 
+    position: fixed; 
+    top: 50%; 
+    left: 50%; 
+    transform: translate(-50%, -50%); 
+    background: white; 
+    border-radius: 16px; /* 圓角更圓 */
+    padding: 25px;       /* 內距加大 */
+    z-index: 1000; 
+    width: 320px;        /* 寬度稍微加寬 */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .modal-btns { display: flex; flex-direction: column; gap: 12px; }
+
+    /* 按鈕共用樣式：無框線、大字體、圓角 */
+    .modal-btns button {
+      border: none !important; /* 強制移除框線 */
+      padding: 12px;           /* 按鈕變高 */
+      border-radius: 8px;
+      font-size: 16px;         /* 字體放大 */
+      cursor: pointer;
+      width: 100%;
+      font-weight: bold;
+      transition: opacity 0.2s;
+    }
+
+    .modal-btns button:hover { opacity: 0.9; }
+
+    /* 顏色設定 */
+    .btn-danger {
+      background-color: #ffebee !important; /* 淡粉紅 */
+      color: #c62828 !important;            /* 深紅色字 */
+    }
+
+    .btn-choice {
+      background-color: #fffde7 !important; /* 淡黃色 */
+      color: #f57f17 !important;            /* 深黃/棕色字 */
+    }
+
+    /* 新增：淡藍色確認按鈕 */
+    .btn-submit-light {
+      background-color: #e8f0fe !important; /* 淡藍背景 */
+      color: #1a73e8 !important;            /* 深藍文字 */
+      font-weight: bold;
+    }
+    .btn-submit-light:hover {
+      background-color: #d2e3fc !important; /* 滑鼠移過去稍微深一點 */
+    }
+
+    /* 新增：黃色按鈕被選取時的樣式 (較深黃色) */
+    .btn-choice.selected {
+      background-color: #ffb300 !important; /* 較深的黃色背景 */
+      color: #ffe082 !important;            /* 深橘褐色文字 */
+      border: 2px solid #ffb300 !important; /* 加上深色邊框 */
+    }
+
+    /* 清除與取消按鈕微調 */
+    .btn-clear { background: #fff !important; color: #666; border: 1px solid #eee !important; }
+    .btn-cancel { background: #f1f3f4 !important; color: #555; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div id="step1" class="view-step active">
+    <div class="header"><h2>排班填寫系統</h2><p>請選擇您的姓名</p></div>
+    <div class="form-group">
+      <select id="staffSelect">
+        <option value="">-- 點擊選擇 --</option>
+        <? ftList.forEach(function(s) { ?> <option value="<?= s.id ?>"><?= s.name ?></option> <? }); ?>
+      </select>
+    </div>
+    <button class="btn-main" onclick="nextStep()">進入日曆</button>
+  </div>
+
+  <div id="step2" class="view-step">
+    <div class="header">
+      <button class="btn-switch" onclick="handleUserSwitch()">切換使用者</button>
+      <h3 id="display_name">你好</h3>
+      <p>月份：<?= targetMonth ?></p>
+    </div>
+    <div id="calendar" class="calendar-grid"></div>
+    <div style="margin-top:20px;"><button id="submitBtn" class="btn-main" onclick="submitAll()">確認提交</button></div>
+  </div>
+</div>
+
+<div id="overlay"></div>
+<div id="modal">
+  <h4 id="modal-date-title" style="margin:0 0 20px 0; text-align:center; color:#1a73e8; font-size: 20px;"></h4>
+  
+  <div class="modal-btns">
+    <button class="btn-danger" onclick="setFullOff()">全天休假</button>
+    
+    <div style="font-size: 14px; color: #666; margin-top: 5px; font-weight:bold; text-align:center;">
+      指定休假 (可複選，其餘時段為上班)
+    </div>
+    
+    <button id="btn-A" class="btn-choice" onclick="toggleShift('A')">A 班指定休假</button>
+    <button id="btn-B" class="btn-choice" onclick="toggleShift('B')">B 班指定休假</button>
+    <button id="btn-C" class="btn-choice" onclick="toggleShift('C')">C 班指定休假</button>
+    
+    <hr style="width:100%; border:0; border-top:1px solid #eee; margin:10px 0;">
+    
+    <button class="btn-submit-light" style="margin-top:10px; padding: 12px; font-size:16px;" onclick="saveDaySettings()">確認送出</button>
+    <button class="btn-clear" onclick="resetDate()">清除此日設定</button>
+    <button class="btn-cancel" onclick="closeModal()">取消</button>
+  </div>
+</div>
+
+<script>
+  let currentStaffId = "";
+  let currentStaffName = "";
+  const targetMonthStr = "<?= targetMonth ?>";
+  const closedDates = <?!= closedDates ?>;
+  const otherPeopleEvents = JSON.parse(<?= existingEvents ?> || '{}');
+  let selectedData = {};
+  let currentEditingDate = "";
+  let tempOffShifts = new Set(); // 用來暫存 Modal 開啟時的複選狀態
+
+  function openModal(d) {
+    currentEditingDate = d;
+    document.getElementById('modal-date-title').innerText = d;
+    
+    // 1. 初始化暫存：每次打開 Modal 先清空
+    tempOffShifts.clear();
+
+    // 2. 如果這天之前已經設定過「部分休假」，把舊設定讀回來顯示
+    if (selectedData[d] && selectedData[d].type === "PARTIAL_OFF") {
+       selectedData[d].shifts.forEach(s => tempOffShifts.add(s));
+    }
+
+    // 3. 更新按鈕顏色狀態
+    updateModalButtons();
+
+    document.getElementById('modal').style.display = 'block';
+    document.getElementById('overlay').style.display = 'block';
+  }
+
+  // 2. 根據選取狀態改變按鈕顏色
+  function updateModalButtons() {
+    ['A', 'B', 'C'].forEach(s => {
+      const btn = document.getElementById('btn-' + s);
+      if (tempOffShifts.has(s)) {
+        // 有被選中 -> 加上 .selected class (變深黃色)
+        btn.classList.add('selected');
+      } else {
+        // 沒被選中 -> 移除 .selected class (回復淺黃色)
+        btn.classList.remove('selected');
+      }
+    });
+  }
+
+  // 3. 按下「確認送出」才真正寫入資料
+  function saveDaySettings() {
+    // 判斷：如果使用者沒選任何班別，就當作取消設定，或提示使用者
+    if (tempOffShifts.size === 0) {
+      // 這裡看你的需求，可以 alert 提示，或是直接當作「清除設定」
+      // 這裡示範：如果沒選，就提示
+      alert("若無指定休假，請按「清除此日設定」或「取消」");
+      return;
+    }
+    
+    // 將 Set 轉為陣列並排序 (例如 ['A', 'C'])
+    const shifts = Array.from(tempOffShifts).sort();
+    
+    // 寫入 selectedData
+    selectedData[currentEditingDate] = { type: "PARTIAL_OFF", shifts: shifts };
+    
+    // 更新外部日曆顯示文字 (例如顯示 "A,C休")
+    updateUI(currentEditingDate, shifts.join(',') + "休", "bg-off");
+    
+    closeModal();
+  }
+
+  function handleUserSwitch() {
+    if(confirm("請重新整理以切換使用者。")) {
+      location.reload();
+    }
+  }
+
+  function nextStep() {
+    const sel = document.getElementById('staffSelect');
+    if (!sel.value) return alert('請選擇姓名');
+    currentStaffId = sel.value;
+    currentStaffName = sel.options[sel.selectedIndex].text;
+    document.getElementById('step1').classList.remove('active');
+    document.getElementById('step2').classList.add('active');
+    document.getElementById('display_name').innerText = "你好，" + currentStaffName;
+    initCalendar();
+  }
+
+  function initCalendar() {
+    const [y, m] = targetMonthStr.split('-').map(Number);
+    const firstDay = new Date(y, m-1, 1).getDay();
+    const lastDate = new Date(y, m, 0).getDate();
+    const container = document.getElementById('calendar');
+    container.innerHTML = '';
+
+    ['日','一','二','三','四','五','六'].forEach(h => {
+      container.innerHTML += `<div class="day-header">${h}</div>`;
+    });
+
+    for (let i = 0; i < firstDay; i++) container.innerHTML += `<div class="day-cell" style="background:#f9f9f9;cursor:default;"></div>`;
+
+    for (let d = 1; d <= lastDate; d++) {
+      const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+      // 考慮後端傳來可能是 yyyy/mm/dd 格式，進行比對
+      const dateStrSlash = dateStr.replace(/-/g, '/');
+      
+      const isSun = new Date(y, m-1, d).getDay() === 0;
+      // --- 手術新增：判斷是否為店休日 ---
+      const isClosed = closedDates.includes(dateStr) || closedDates.includes(dateStrSlash);
+
+      let html = '';
+
+      // --- 修改：將 isSun 與 isClosed 合併處理，視覺完全一致 ---
+      if (isSun || isClosed) {
+        // 灰底 (sunday-cell)、無 onclick、無標籤文字
+        html = `<div id="cell-${dateStr}" class="day-cell sunday-cell" style="cursor:default;">
+                  <span class="day-num">${d}</span>
+                  <div id="label-${dateStr}" class="my-status"></div>
+                  <div class="others-container"></div>
+                </div>`;
+      } else {
+        // 正常營業日：保留原本所有複雜的標籤處理邏輯
+        html = `<div id="cell-${dateStr}" class="day-cell" onclick="openModal('${dateStr}')" >
+                  <span class="day-num">${d}</span>
+                  <div id="label-${dateStr}" class="my-status"></div>
+                  <div class="others-container">`;
+        
+        if (otherPeopleEvents[dateStr]) {
+          // --- 完整保留原有註解與整合標籤邏輯 ---
+          const staffSummary = {}; // 用來存放每個人的狀態：{ "小羅": { off: ["A","B","C"], fixed: null } }
+
+          // 結構改為： { "小羅": { off: [], fixed: [] } }  <-- fixed 改為陣列
+
+          otherPeopleEvents[dateStr].forEach(ev => {
+            if(ev.text.includes(currentStaffName)) return; // 跳過自己
+
+            // 解析名字與班別
+            let name = ev.text;
+            let shift = null;
+            if (ev.text.includes('(')) {
+              const match = ev.text.match(/^([^(]+)\((.+)\)$/);
+              if (match) {
+                name = match[1];
+                shift = match[2];
+              }
+            }
+
+            // 初始化：fixed 改用陣列 [] 儲存，避免後面的班別覆蓋前面的
+            if (!staffSummary[name]) staffSummary[name] = { off: [], fixed: [] };
+            
+            if (ev.type === 'off') {
+              staffSummary[name].off.push(shift || 'ABC'); 
+            } else {
+              // 這裡改成 push，支援同時有 A 和 B 都是上班的情況
+              if (shift) staffSummary[name].fixed.push(shift);
+            }
+          });
+
+          // 生成整合後的 HTML
+          for (const [name, status] of Object.entries(staffSummary)) {
+            // 先處理上班：如果有指定上班 (陣列長度 > 0)
+            if (status.fixed.length > 0) {
+              // 將陣列排序並轉字串，例如 ['A', 'B'] -> "AB"
+              status.fixed.sort(); 
+              const fixedStr = status.fixed.join('');
+              
+              html += `<div class="other-tag others-fixed">${name}(${fixedStr})</div>`;
+
+              // 計算剩下沒上的班別 (自動推導休假)
+              const allShifts = ['A', 'B', 'C'];
+              // 只要該班別不在 fixed 陣列中，就算休假
+              const offShifts = allShifts.filter(s => !status.fixed.includes(s)).join('');
+              
+              if (offShifts) {
+                html += `<div class="other-tag others-off">${name}OFF(${offShifts})</div>`;
+              }
+            } 
+            // 如果沒有指定上班，但有休假紀錄 (例如全休)
+            else if (status.off.length > 0) {
+              html += `<div class="other-tag others-off">${name}OFF</div>`;
+            }
+          }
+        }  
+        html += `</div></div>`;
+      }
+      container.innerHTML += html;
+    }
+  }
+
+  function openModal(d) {
+    currentEditingDate = d;
+    document.getElementById('modal-date-title').innerText = d;
+    document.getElementById('modal').style.display = 'block';
+    document.getElementById('overlay').style.display = 'block';
+  }
+  function closeModal() { document.getElementById('modal').style.display = 'none'; document.getElementById('overlay').style.display = 'none'; }
+
+  function setFullOff() {
+    selectedData[currentEditingDate] = { type: "FULL_OFF" };
+    updateUI(currentEditingDate, "全休", "bg-off");
+    closeModal();
+  }
+
+  // 1. 切換休假班別 (複選邏輯)
+  function toggleShift(s) {
+    if (tempOffShifts.has(s)) {
+      tempOffShifts.delete(s);
+    } else {
+      tempOffShifts.add(s);
+    }
+    updateModalButtons();
+  }
+
+  // 3. 確認送出 (將暫存寫入 selectedData)
+  function saveDaySettings() {
+    if (tempOffShifts.size === 0) {
+      alert("請至少選擇一個休假班別，或直接點選「清除此日設定」");
+      return;
+    }
+    
+    // 將 Set 轉為陣列並排序
+    const shifts = Array.from(tempOffShifts).sort();
+    
+    // 寫入資料結構
+    selectedData[currentEditingDate] = { type: "PARTIAL_OFF", shifts: shifts };
+    
+    // 更新日曆 UI 顯示：顯示 "A,B休"
+    updateUI(currentEditingDate, shifts.join(',') + "休", "bg-off");
+    closeModal();
+  }
+
+  function resetDate() {
+    delete selectedData[currentEditingDate];
+    updateUI(currentEditingDate, "", "");
+    closeModal();
+  }
+
+  function updateUI(date, text, cls) {
+    const cell = document.getElementById(`cell-${date}`);
+    const label = document.getElementById(`label-${date}`);
+    cell.classList.remove('bg-off', 'bg-fixed');
+    label.classList.remove('bg-off', 'bg-fixed', 'show');
+    if (cls) {
+      cell.classList.add(cls);
+      label.innerText = text;
+      label.classList.add('show', cls);
+    }
+  }
+
+  // 找到 submitAll 函式 
+  function submitAll() {
+    if (Object.keys(selectedData).length === 0) return alert('尚未選擇日期');
+    if (!confirm('確認提交？舊資料將被覆蓋。')) return;
+
+    const staffId = document.getElementById('staffSelect').value;
+    let off = [], fix = [];
+
+    for (const [date, info] of Object.entries(selectedData)) {
+      if (info.type === "FULL_OFF") { 
+        // 全休：三個班都休
+        off.push(`${date}|A`, `${date}|B`, `${date}|C`);
+      } else if (info.type === "PARTIAL_OFF") { 
+        // --- 修改邏輯重點 ---
+        // 使用者選的 info.shifts 是「指定休假」 (例如 ['A'])
+        // 1. 將選中的班別加入 off_dates
+        info.shifts.forEach(s => {
+           off.push(`${date}|${s}`);
+        });
+
+        // 2. 計算剩餘班別加入 fixed_shifts (指定上班)
+        ['A', 'B', 'C'].forEach(s => {
+          if (!info.shifts.includes(s)) {
+            fix.push(`${date}|${s}`);
+          }
+        });
+      }
+    }
+
+    const payload = {
+      runId: targetMonthStr,
+      staffId: staffId,
+      offDates: off,
+      fixedShifts: fix
+    };
+
+    // 後續呼叫 google.script.run 的部分維持不變...
+    google.script.run
+      .withSuccessHandler(function(res) {
+        alert('提交成功！');
+        location.reload(); 
+      })
+      .withFailureHandler(function(err) {
+        alert('提交失敗：' + err.message);
+      })
+      .processFtSubmission(payload);
+  }
+</script>
+</body>
+</html>
