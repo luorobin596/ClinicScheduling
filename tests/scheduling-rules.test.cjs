@@ -1,14 +1,7 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
-const path = require('node:path');
-function engine(requests = []) {
-  const box = vm.createContext({console:{log(){},warn(){}},Session:{getScriptTimeZone:()=> 'Asia/Taipei'},Utilities:{formatDate:(d,z,p)=>{const v=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:z,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d).map(x=>[x.type,x.value]));return p.replace('yyyy',v.year).replace('MM',v.month).replace('dd',v.day);}},RepoStaff:{getAvailableStaff:()=>[1,2,3,4,5].map(i=>({id:`FT00${i}`,name:`員工${i}`}))},RepoRequests:{getAllRequestsByRun:()=>requests}});
-  for(const file of ['Config_system.js','scheduling_engine.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'..',file),'utf8'),box);
-  vm.runInContext("RulesConfig.loadDynamicConfig=()=>({closedDates:[],minDaysOff:9,monthlyHours:176,pedsAssignments:{PEDS_PATTERN_1:'FT003',PEDS_PATTERN_2:'FT002'}}); SchedulingEngine.saveToScheduleOutput=()=>{};",box);
-  return {e:box.SchedulingEngine, rules:box.RulesConfig.getPedsRules()};
-}
+const {engine}=require('./support/engine-harness.cjs');
+const {generateLeaveFixture}=require('./support/leave-model.cjs');
 function initialized(requests=[]){const {e,rules}=engine(requests);const c=e.createContext('2026-11');e._fillFixedShifts(c,rules,requests);return {e,c};}
 test('AC assignment never exceeds the three-person orthopedic limit',()=>{
   const {e,c}=initialized();e._assignWeekdayShifts(c);
@@ -47,35 +40,33 @@ for (const [date, shift, limit] of [
  assert.throws(()=>engine([...requests,{staff_id:`FT00${limit+1}`,date,shift,type:'fixed'}]).e.generateSchedule('2026-11'),new RegExp(`${date}.*${shift}`));
 });
 
-test('all orthopedic shifts respect configured caps across 100 random leave months',()=>{
- for(let seed=1;seed<=100;seed++){
-  let state=seed;const random=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296;};
-  const requests=[];
-  for(let i=1;i<=5;i++){
-   const staff_id=`FT00${i}`, candidates=[];
-   for(let d=1;d<=30;d++){
-    const weekday=new Date(2026,10,d).getDay();if(!weekday)continue;
-    for(const shift of weekday===6?['A','B']:['A','B','C'])candidates.push({staff_id,date:`2026-11-${String(d).padStart(2,'0')}`,shift,type:'off'});
-   }
-   for(let j=candidates.length-1;j>0;j--){const k=Math.floor(random()*(j+1));[candidates[j],candidates[k]]=[candidates[k],candidates[j]];}
-   const dates={};let chosen=0;
-   for(const r of candidates){
-    if((dates[r.date]||0)>=2)continue;
-    if(i===3 && requests.some(q=>q.staff_id==='FT002' && q.date===r.date && q.shift===r.shift))continue;
-    requests.push(r);dates[r.date]=(dates[r.date]||0)+1;if(++chosen===8)break;
-   }
-   assert.equal(chosen,8);
+test('100 coordinated human leave models obey limits and chosen shifts',()=>{
+ let successes=0, conflicts=0;
+ for(let seed=1;seed<=2000 && successes<100;seed++){
+  const fixture=generateLeaveFixture(seed);
+  let context;
+  try { context=engine(fixture.requests).e.generateSchedule('2026-11'); }
+  catch(error){
+   if(!/^(小兒代班衝突|骨科固定班超額)：/.test(error.message))throw error;
+   conflicts++;continue; // Recorded infeasible inputs, never alter selected intent.
   }
-  const context=engine(requests).e.generateSchedule('2026-11');
+  successes++;
   for(const day of context.days)for(const [shift,stations]of Object.entries(day.slots)){
    const cap=day.dayOfWeek===6&&shift==='B'?2:3;
    assert.ok(stations.ORTHO.staff.length<=cap,`seed ${seed}, ${day.date} ${shift}`);
    for(const station of Object.values(stations))for(const id of station.staff){
-    assert.ok(!requests.some(r=>r.staff_id===id && r.date===day.date && r.shift===shift),`leave conflict: seed ${seed}, ${day.date} ${shift} ${id}`);
+    assert.ok(!fixture.requests.some(r=>r.staff_id===id && r.date===day.date && r.shift===shift && r.type==='off'));
    }
    assert.equal(new Set([...stations.ORTHO.staff,...stations.PEDS.staff]).size,stations.ORTHO.staff.length+stations.PEDS.staff.length);
   }
+  for(const event of fixture.events){
+   const day=context.days.find(d=>d.date===event.date);
+   const actual=Object.keys(day.slots).filter(s=>Object.values(day.slots[s]).some(slot=>slot.staff.includes(event.staff_id))).sort();
+   assert.deepEqual(actual,event.work?event.work.slice().sort():[],`seed ${seed} ${event.staff_id} ${event.date} ${event.kind}`);
+  }
  }
+ assert.equal(successes,100);
+ assert.ok(conflicts>0); // Conflicting random intentions require coordination.
 });
 
 test('already full weekday A/B/C rosters receive no additional automatic assignments',()=>{

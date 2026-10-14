@@ -1,95 +1,75 @@
-// Offline baseline: real engine/config, synthetic staff and requests, no Google writes.
-const fs = require('node:fs');
-const vm = require('node:vm');
-const path = require('node:path');
-const root = path.resolve(__dirname, '..');
-const results = [];
-for (let seed = 1; seed <= 100; seed++) for (const withPeds of [true]) {
-  const staff = Array.from({length:5}, (_, i) => ({id:`FT00${i+1}`,name:`測試員工${i+1}`}));
-  let state = seed;
-  const random = () => { state = (Math.imul(state,1664525)+1013904223) >>> 0; return state / 4294967296; };
-  const requests = [], requestedHalfDays = [];
-  // Default assumption: five Sundays count toward nine days; choose eight additional half-days.
-  // Each A/B/C shift counts as half a day, per user definition.
-  for (const person of staff) {
-    const halves = [];
-    for (let d=1; d<=30; d++) {
-      const weekday = new Date(2026,10,d).getDay();
-      if (!weekday) continue;
-      const date = `2026-11-${String(d).padStart(2,'0')}`;
-      for (const shift of (weekday===6?['A','B']:['A','B','C'])) halves.push({date,shifts:[shift]});
-    }
-    for (let i=halves.length-1;i>0;i--) { const j=Math.floor(random()*(i+1)); [halves[i],halves[j]]=[halves[j],halves[i]]; }
-    const selected=[], perDate={};
-    for (const half of halves) { if ((perDate[half.date]||0)>=2) continue; if (person.id==='FT003' && requests.some(r=>r.staff_id==='FT002' && r.date===half.date && r.shift===half.shifts[0])) continue; selected.push(half); perDate[half.date]=(perDate[half.date]||0)+1; if(selected.length===8) break; }
-    requestedHalfDays.push({id:person.id,sundays:5,additionalHalfDays:8,requestedDayEquivalent:9,selected});
-    for (const half of selected) for (const shift of half.shifts) requests.push({staff_id:person.id,date:half.date,shift,type:'off'});
+// Human leave model v3 with orthopedic minimum coverage. Offline only: real engine; fake Google reads and no output writes.
+const fs=require('node:fs');
+const path=require('node:path');
+const {engine}=require('./support/engine-harness.cjs');
+const {generateLeaveFixture,classifySingle}=require('./support/leave-model.cjs');
+const {coverageFindings,potentialCoverageDays}=require('./support/daily-coverage.cjs');
+const metrics=['hours','involuntarySingle','voluntarySingle','AC','BC','AB'];
+const stats=values=>values.length?{min:Math.min(...values),mean:values.reduce((a,b)=>a+b,0)/values.length,max:Math.max(...values)}:null;
+function analyze(fixture,context){
+ const summary=fixture.staff.map(s=>({id:s.id,shifts:0,hours:0,workDays:0,offDays:0,involuntarySingle:0,voluntarySingle:0,pediatricInvoluntarySingle:0,AC:0,BC:0,AB:0,weekly:[]}));
+ const violations=[];
+ for(const day of context.days){
+  for(const [shift,stations]of Object.entries(day.slots)){
+   const cap=day.dayOfWeek===6&&shift==='B'?2:3;
+   if(stations.ORTHO.staff.length>cap)violations.push({type:'overstaffed',date:day.date,shift});
+   const all=Object.values(stations).flatMap(s=>Array.from(s.staff));
+   if(new Set(all).size!==all.length)violations.push({type:'double-station',date:day.date,shift});
+   for(const id of all)if(fixture.requests.some(r=>r.staff_id===id&&r.date===day.date&&r.shift===shift&&r.type==='off'))violations.push({type:'leave',date:day.date,shift,id});
   }
-  const sandbox = vm.createContext({
-    console:{log(){},warn(){},error(){}},
-    Session:{getScriptTimeZone:()=> 'Asia/Taipei'},
-    Utilities:{formatDate:(date, zone, pattern)=> {
-      const parts = new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
-      const get = key=>parts.find(p=>p.type===key).value;
-      return pattern.replace('yyyy',get('year')).replace('MM',get('month')).replace('dd',get('day'));
-    }},
-    RepoStaff:{getAvailableStaff:()=>staff.map(s=>({...s}))},
-    RepoRequests:{getAllRequestsByRun:()=>requests}
-  });
-  for (const file of ['Config_system.js','scheduling_engine.js']) vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),sandbox,{filename:file});
-  vm.runInContext(`RulesConfig.loadDynamicConfig = () => ({targetMonth:'2026-11',closedDates:[],monthlyHours:176,minDaysOff:9,pedsAssignments:${withPeds?"{PEDS_PATTERN_1:'FT003',PEDS_PATTERN_2:'FT002'}":"{}"}});
-    SchedulingEngine.saveToScheduleOutput = () => {};`,sandbox);
-  const context = vm.runInContext("SchedulingEngine.generateSchedule('2026-11')",sandbox);
-  const summary = staff.map(s=>({id:s.id,shifts:0,hours:0,workDays:0,offDays:0,A:0,B:0,C:0,pedsShifts:0,singleDays:0}));
-  const gaps=[], overstaffed=[], violations=[], leaveViolations=[], rows=[];
-  for(const day of context.days){
-    for(const s of summary){
-      const assigned=[];
-      for(const [shift,stations] of Object.entries(day.slots)){
-        for(const [station,slot] of Object.entries(stations)) if(slot.staff.includes(s.id)){
-          assigned.push(shift); if(requests.some(r=>r.staff_id===s.id && r.date===day.date && r.shift===shift)) leaveViolations.push({id:s.id,date:day.date,shift,station}); s.shifts++;s[shift]++;s.hours+=4;if(station==='PEDS')s.pedsShifts++;
-        }
-      }
-      if(assigned.length){s.workDays++;if(assigned.length===1)s.singleDays++;}else s.offDays++;
-      if(assigned.length>2 || new Set(assigned).size!==assigned.length)violations.push({date:day.date,id:s.id,assigned});
-      rows.push([withPeds?'example-peds':'ortho-only',day.date,s.id,assigned.sort().join('')||'OFF']);
-    }
-    for(const [shift,stations] of Object.entries(day.slots)){
-      const req = vm.runInContext(`RulesConfig.SHIFTS.${day.dayOfWeek===6?'SATURDAY':'WEEKDAY'}.${shift}.req_total`,sandbox);
-      const ortho=stations.ORTHO.staff.length,peds=stations.PEDS.staff.length;
-      if(ortho<req)gaps.push({date:day.date,shift,ortho,required: req,peds});
-      if(ortho>req)overstaffed.push({date:day.date,shift,ortho,peds,combinedLimit:req});
-      for(const [station,slot] of Object.entries(stations))if(slot.staff.length>4)violations.push({date:day.date,shift,station,outputTruncation:slot.staff.length});
-    }
+  for(const person of summary){
+   const assigned=Object.keys(day.slots).filter(s=>Object.values(day.slots[s]).some(slot=>slot.staff.includes(person.id))).sort();
+   const event=fixture.events.find(e=>e.staff_id===person.id&&e.date===day.date);
+   if(event && assigned.join('')!==(event.work||[]).slice().sort().join(''))violations.push({type:'selection-mismatch',id:person.id,date:day.date});
+   if(assigned.length>2)violations.push({type:'daily-limit',id:person.id,date:day.date});
+   person.shifts+=assigned.length;person.hours+=assigned.length*4;
+   person[assigned.length?'workDays':'offDays']++;
+   const week=Math.floor((Number(day.date.slice(-2))-1)/7); // Nov 2026 starts on Sunday.
+   if(!person.weekly[week])person.weekly[week]={week:week+1,AC:0,BC:0,AB:0,weekdayAC:0,weekdayBC:0,weekdayAB:0};
+   const pattern=assigned.join('');
+   if(['AC','BC','AB'].includes(pattern)){
+    person[pattern]++;person.weekly[week][pattern]++;
+    if(day.dayOfWeek!==6)person.weekly[week][`weekday${pattern}`]++;
+   }
+   const single=classifySingle(person.id,day.date,assigned,fixture.events);
+   if(single){
+    person[single]++;
+    if(single==='involuntarySingle'&&day.slots[assigned[0]].PEDS.staff.includes(person.id))person.pediatricInvoluntarySingle++;
+   }
   }
-  const weeks = sandbox.SchedulingEngine._groupDaysByWeek(context.days);
-  for (const person of summary) {
-    Object.assign(person,{AC:0,BC:0,AB:0,unrequestedSingle:0,leaveForcedSingle:0,weekly:[]});
-    weeks.forEach((days, index)=>{
-      const w={week:index+1,dates:[days[0].date,days.at(-1).date],weekdays:days.filter(d=>d.isOpen && d.dayOfWeek!==6).length,AC:0,BC:0,AB:0};
-      for(const day of days){
-        const assigned=Object.keys(day.slots).filter(shift=>Object.values(day.slots[shift]).some(slot=>slot.staff.includes(person.id))).sort();
-        const pattern=assigned.join('');
-        if(['AC','BC','AB'].includes(pattern)){person[pattern]++;w[pattern]++;}
-        if(assigned.length===1){
-          const possible=Object.keys(day.slots);
-          const other=possible.filter(s=>s!==assigned[0]);
-          const forced=other.every(shift=>requests.some(r=>r.staff_id===person.id && r.date===day.date && r.shift===shift && r.type==='off'));
-          person[forced?'leaveForcedSingle':'unrequestedSingle']++;
-        }
-      }
-      person.weekly.push(w);
-    });
-  }
-  results.push({seed,requestedHalfDays,leaveViolations,scenario:withPeds?'示例小兒科：FT003 pattern1、FT002 pattern2':'五人純骨科',settings:{month:'2026-11',minDaysOff:9,monthlyHours:176,noRequests:false,noExtraHolidays:true},openDays:context.days.filter(d=>d.isOpen).length,summary,gaps,overstaffed,violations,rows});
+ }
+ return {seed:fixture.seed,leaveSummary:fixture.leaveSummary,events:fixture.events,summary,violations,minimumCoverageFindings:coverageFindings(context.days,{station:'ORTHO'})};
 }
-
-const metrics=['hours','singleDays','unrequestedSingle','leaveForcedSingle','AC','BC','AB'];
-const stats=values=>({min:Math.min(...values),mean:values.reduce((a,b)=>a+b,0)/values.length,max:Math.max(...values)});
-const byStaff=results[0].summary.map((s,i)=>({id:s.id,...Object.fromEntries(metrics.map(m=>[m,stats(results.map(r=>r.summary[i][m]))]))}));
-const spread=Object.fromEntries(metrics.map(m=>[m,stats(results.map(r=>Math.max(...r.summary.map(s=>s[m]))-Math.min(...r.summary.map(s=>s[m]))))]));
-const fullWeeks=results.flatMap(r=>r.summary[0].weekly.map((w,i)=>({r,i,w})).filter(x=>x.w.weekdays===5));
-const weeklySpread=Object.fromEntries(['AC','BC','AB'].map(m=>[m,stats(fullWeeks.map(({r,i})=>Math.max(...r.summary.map(s=>s.weekly[i][m]))-Math.min(...r.summary.map(s=>s.weekly[i][m]))))]));
-const report={conditions:'2026-11; five FT; FT003 pattern1, FT002 pattern2; 5 Sundays + 8 requested shift leaves per staff; no fixed-shift requests; 100 seeds identical to regression inputs; no writes to Sheets',byStaff,monthlySpread:spread,fullWeekSpread:weeklySpread,sample:results[0].summary,checks:{overstaffed:results.filter(r=>r.overstaffed.length).length,leaveViolations:results.filter(r=>r.leaveViolations.length).length},runs:results};
-fs.writeFileSync(path.join(__dirname,'fairness-2026-11.json'),JSON.stringify(report,null,2)+'\n');
-console.log(JSON.stringify({...report,runs:undefined},null,2));
+function scenario(pairSelectionsPerStaff){
+ const runs=[],inputConflicts=[];
+ for(let seed=1;seed<=2000&&runs.length<100;seed++){
+  const fixture=generateLeaveFixture(seed,{pairSelectionsPerStaff});
+  let context;
+  try{
+   const {e,rules}=engine(fixture.requests);
+   const initialized=e.createContext('2026-11');
+   e._fillFixedShifts(initialized,rules,fixture.requests);
+   const unavailable=coverageFindings(potentialCoverageDays(initialized,fixture.staff,e),{station:'ORTHO'});
+   if(unavailable.length){inputConflicts.push({seed,message:'骨科最低覆蓋可用人力不足',days:unavailable});continue;}
+   context=e.generateSchedule('2026-11');
+  }
+  catch(error){
+   if(!/^(小兒代班衝突|骨科固定班超額)：/.test(error.message))throw error;
+   inputConflicts.push({seed,message:error.message});continue;
+  }
+  runs.push(analyze(fixture,context));
+ }
+ if(runs.length!==100)throw new Error('Could not obtain 100 coordinated fixtures');
+ const byStaff=runs[0].summary.map((s,i)=>({id:s.id,...Object.fromEntries(metrics.map(m=>[m,stats(runs.map(r=>r.summary[i][m]))]))}));
+ const monthlySpread=Object.fromEntries(metrics.map(m=>[m,stats(runs.map(r=>Math.max(...r.summary.map(s=>s[m]))-Math.min(...r.summary.map(s=>s[m]))))]));
+ const fullWeekSpread=Object.fromEntries(['AC','BC','AB'].map(m=>[m,stats(runs.flatMap(r=>[0,1,2,3].map(w=>Math.max(...r.summary.map(s=>s.weekly[w][`weekday${m}`]))-Math.min(...r.summary.map(s=>s.weekly[w][`weekday${m}`])))))]));
+ const fullDayDistribution={};
+ for(const r of runs)for(const s of r.leaveSummary)fullDayDistribution[s.fullDays]=(fullDayDistribution[s.fullDays]||0)+1;
+ return {pairSelectionsPerStaff,attempted:runs.length+inputConflicts.length,successful:runs.length,minimumCoveragePassedRuns:runs.filter(r=>!r.minimumCoverageFindings.length).length,inputConflicts,fullDayDistribution,byStaff,monthlySpread,fullWeekSpread,violationRuns:runs.filter(r=>r.violations.length).length,coverageViolationRuns:runs.filter(r=>r.minimumCoverageFindings.length).length,coverageViolationDays:runs.reduce((n,r)=>n+r.minimumCoverageFindings.length,0),runs};
+}
+module.exports={analyze,scenario};
+if(require.main===module){
+const report={modelVersion:3,conditions:{month:'2026-11',minimumCoverage:{station:'ORTHO',weekday:{staff:2,shifts:['A','B','C']},saturday:{staff:1,additionalShiftRequirement:false}},totalLeaveDays:9,sundayDays:5,additionalLeaveUnits:8,half:'1 fixed shift; other two off; costs 1 unit',full:'ABC off; costs 2 units',pair:'2 fixed shifts; remaining shift off; costs 0 units; included in pair fairness',pedsAssignments:{PEDS_PATTERN_1:'FT003',PEDS_PATTERN_2:'FT002'},distributionAssumption:'fullDays sampled uniformly 0..4; rest halfDays=8-2*fullDays; not an observed clinic distribution',sampling:'first 100 inputs passing necessary availability screening and engine execution per scenario; successful means execution completed, not minimum coverage passed; all coverage failures are retained; fairness includes these failing schedules and is diagnostic only',weeklyComparison:'four full weeks; weekdays only; monthly pairs include Saturdays'},scenarios:[scenario(0),scenario(1)]};
+fs.writeFileSync(path.join(__dirname,'fairness-human-leave-coverage-2026-11.json'),JSON.stringify(report,null,2)+'\n');
+for(const s of report.scenarios)console.log(JSON.stringify({...s,runs:undefined,inputConflicts:{total:s.inputConflicts.length,pediatric:s.inputConflicts.filter(x=>x.message.startsWith('小兒')).length,fixedOverload:s.inputConflicts.filter(x=>x.message.startsWith('骨科固定')).length,minimumCoverage:s.inputConflicts.filter(x=>x.message.startsWith('骨科最低')).length}},null,2));
+}
