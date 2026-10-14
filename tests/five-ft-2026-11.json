@@ -1,0 +1,2192 @@
+[
+  {
+    "scenario": "五人純骨科",
+    "settings": {
+      "month": "2026-11",
+      "minDaysOff": 9,
+      "monthlyHours": 176,
+      "noRequests": true,
+      "noExtraHolidays": true
+    },
+    "openDays": 25,
+    "summary": [
+      {
+        "id": "FT001",
+        "shifts": 42,
+        "hours": 168,
+        "workDays": 25,
+        "offDays": 5,
+        "A": 15,
+        "B": 14,
+        "C": 13,
+        "pedsShifts": 0,
+        "singleDays": 8
+      },
+      {
+        "id": "FT002",
+        "shifts": 42,
+        "hours": 168,
+        "workDays": 25,
+        "offDays": 5,
+        "A": 15,
+        "B": 14,
+        "C": 13,
+        "pedsShifts": 0,
+        "singleDays": 8
+      },
+      {
+        "id": "FT003",
+        "shifts": 36,
+        "hours": 144,
+        "workDays": 20,
+        "offDays": 10,
+        "A": 10,
+        "B": 14,
+        "C": 12,
+        "pedsShifts": 0,
+        "singleDays": 4
+      },
+      {
+        "id": "FT004",
+        "shifts": 37,
+        "hours": 148,
+        "workDays": 20,
+        "offDays": 10,
+        "A": 12,
+        "B": 13,
+        "C": 12,
+        "pedsShifts": 0,
+        "singleDays": 3
+      },
+      {
+        "id": "FT005",
+        "shifts": 41,
+        "hours": 164,
+        "workDays": 25,
+        "offDays": 5,
+        "A": 15,
+        "B": 13,
+        "C": 13,
+        "pedsShifts": 0,
+        "singleDays": 9
+      }
+    ],
+    "gaps": [
+      {
+        "date": "2026-11-05",
+        "shift": "A",
+        "ortho": 2,
+        "required": 3,
+        "peds": 0
+      },
+      {
+        "date": "2026-11-06",
+        "shift": "A",
+        "ortho": 2,
+        "required": 3,
+        "peds": 0
+      },
+      {
+        "date": "2026-11-12",
+        "shift": "A",
+        "ortho": 2,
+        "required": 3,
+        "peds": 0
+      },
+      {
+        "date": "2026-11-13",
+        "shift": "A",
+        "ortho": 2,
+        "required": 3,
+        "peds": 0
+      },
+      {
+        "date": "2026-11-19",
+        "shift": "A",
+        "ortho": 2,
+        "required": 3,
+        "peds": 0
+      },
+      {
+        "date": "2026-11-20",
+        "shift": "A",
+        "ortho": 2,
+        "required": 3,
+        "peds": 0
+      },
+      {
+        "date": "2026-11-26",
+        "shift": "A",
+        "ortho": 2,
+        "required": 3,
+        "peds": 0
+      },
+      {
+        "date": "2026-11-27",
+        "shift": "A",
+        "ortho": 2,
+        "required": 3,
+        "peds": 0
+      },
+      {
+        "date": "2026-11-30",
+        "shift": "B",
+        "ortho": 0,
+        "required": 3,
+        "peds": 0
+      }
+    ],
+    "overstaffed": [],
+    "violations": [],
+    "rows": [
+      [
+        "ortho-only",
+        "2026-11-01",
+        "FT001",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-01",
+        "FT002",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-01",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-01",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-01",
+        "FT005",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-02",
+        "FT001",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-02",
+        "FT002",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-02",
+        "FT003",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-02",
+        "FT004",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-02",
+        "FT005",
+        "B"
+      ],
+      [
+        "ortho-only",
+        "2026-11-03",
+        "FT001",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-03",
+        "FT002",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-03",
+        "FT003",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-03",
+        "FT004",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-03",
+        "FT005",
+        "B"
+      ],
+      [
+        "ortho-only",
+        "2026-11-04",
+        "FT001",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-04",
+        "FT002",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-04",
+        "FT003",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-04",
+        "FT004",
+        "A"
+      ],
+      [
+        "ortho-only",
+        "2026-11-04",
+        "FT005",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-05",
+        "FT001",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-05",
+        "FT002",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-05",
+        "FT003",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-05",
+        "FT004",
+        "A"
+      ],
+      [
+        "ortho-only",
+        "2026-11-05",
+        "FT005",
+        "C"
+      ],
+      [
+        "ortho-only",
+        "2026-11-06",
+        "FT001",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-06",
+        "FT002",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-06",
+        "FT003",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-06",
+        "FT004",
+        "C"
+      ],
+      [
+        "ortho-only",
+        "2026-11-06",
+        "FT005",
+        "C"
+      ],
+      [
+        "ortho-only",
+        "2026-11-07",
+        "FT001",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-07",
+        "FT002",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-07",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-07",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-07",
+        "FT005",
+        "A"
+      ],
+      [
+        "ortho-only",
+        "2026-11-08",
+        "FT001",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-08",
+        "FT002",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-08",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-08",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-08",
+        "FT005",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-09",
+        "FT001",
+        "B"
+      ],
+      [
+        "ortho-only",
+        "2026-11-09",
+        "FT002",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-09",
+        "FT003",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-09",
+        "FT004",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-09",
+        "FT005",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-10",
+        "FT001",
+        "B"
+      ],
+      [
+        "ortho-only",
+        "2026-11-10",
+        "FT002",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-10",
+        "FT003",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-10",
+        "FT004",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-10",
+        "FT005",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-11",
+        "FT001",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-11",
+        "FT002",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-11",
+        "FT003",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-11",
+        "FT004",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-11",
+        "FT005",
+        "A"
+      ],
+      [
+        "ortho-only",
+        "2026-11-12",
+        "FT001",
+        "C"
+      ],
+      [
+        "ortho-only",
+        "2026-11-12",
+        "FT002",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-12",
+        "FT003",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-12",
+        "FT004",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-12",
+        "FT005",
+        "A"
+      ],
+      [
+        "ortho-only",
+        "2026-11-13",
+        "FT001",
+        "C"
+      ],
+      [
+        "ortho-only",
+        "2026-11-13",
+        "FT002",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-13",
+        "FT003",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-13",
+        "FT004",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-13",
+        "FT005",
+        "C"
+      ],
+      [
+        "ortho-only",
+        "2026-11-14",
+        "FT001",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-14",
+        "FT002",
+        "A"
+      ],
+      [
+        "ortho-only",
+        "2026-11-14",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-14",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-14",
+        "FT005",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-15",
+        "FT001",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-15",
+        "FT002",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-15",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-15",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-15",
+        "FT005",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-16",
+        "FT001",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-16",
+        "FT002",
+        "B"
+      ],
+      [
+        "ortho-only",
+        "2026-11-16",
+        "FT003",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-16",
+        "FT004",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-16",
+        "FT005",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-17",
+        "FT001",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-17",
+        "FT002",
+        "B"
+      ],
+      [
+        "ortho-only",
+        "2026-11-17",
+        "FT003",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-17",
+        "FT004",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-17",
+        "FT005",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-18",
+        "FT001",
+        "A"
+      ],
+      [
+        "ortho-only",
+        "2026-11-18",
+        "FT002",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-18",
+        "FT003",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-18",
+        "FT004",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-18",
+        "FT005",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-19",
+        "FT001",
+        "A"
+      ],
+      [
+        "ortho-only",
+        "2026-11-19",
+        "FT002",
+        "C"
+      ],
+      [
+        "ortho-only",
+        "2026-11-19",
+        "FT003",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-19",
+        "FT004",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-19",
+        "FT005",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-20",
+        "FT001",
+        "C"
+      ],
+      [
+        "ortho-only",
+        "2026-11-20",
+        "FT002",
+        "C"
+      ],
+      [
+        "ortho-only",
+        "2026-11-20",
+        "FT003",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-20",
+        "FT004",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-20",
+        "FT005",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-21",
+        "FT001",
+        "A"
+      ],
+      [
+        "ortho-only",
+        "2026-11-21",
+        "FT002",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-21",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-21",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-21",
+        "FT005",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-22",
+        "FT001",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-22",
+        "FT002",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-22",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-22",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-22",
+        "FT005",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-23",
+        "FT001",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-23",
+        "FT002",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-23",
+        "FT003",
+        "B"
+      ],
+      [
+        "ortho-only",
+        "2026-11-23",
+        "FT004",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-23",
+        "FT005",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-24",
+        "FT001",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-24",
+        "FT002",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-24",
+        "FT003",
+        "B"
+      ],
+      [
+        "ortho-only",
+        "2026-11-24",
+        "FT004",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-24",
+        "FT005",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-25",
+        "FT001",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-25",
+        "FT002",
+        "A"
+      ],
+      [
+        "ortho-only",
+        "2026-11-25",
+        "FT003",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-25",
+        "FT004",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-25",
+        "FT005",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-26",
+        "FT001",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-26",
+        "FT002",
+        "A"
+      ],
+      [
+        "ortho-only",
+        "2026-11-26",
+        "FT003",
+        "C"
+      ],
+      [
+        "ortho-only",
+        "2026-11-26",
+        "FT004",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-26",
+        "FT005",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-27",
+        "FT001",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-27",
+        "FT002",
+        "C"
+      ],
+      [
+        "ortho-only",
+        "2026-11-27",
+        "FT003",
+        "C"
+      ],
+      [
+        "ortho-only",
+        "2026-11-27",
+        "FT004",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-27",
+        "FT005",
+        "BC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-28",
+        "FT001",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-28",
+        "FT002",
+        "AB"
+      ],
+      [
+        "ortho-only",
+        "2026-11-28",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-28",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-28",
+        "FT005",
+        "A"
+      ],
+      [
+        "ortho-only",
+        "2026-11-29",
+        "FT001",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-29",
+        "FT002",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-29",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-29",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-29",
+        "FT005",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-30",
+        "FT001",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-30",
+        "FT002",
+        "AC"
+      ],
+      [
+        "ortho-only",
+        "2026-11-30",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-30",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "ortho-only",
+        "2026-11-30",
+        "FT005",
+        "AC"
+      ]
+    ]
+  },
+  {
+    "scenario": "示例小兒科：FT003 pattern1、FT004 pattern2",
+    "settings": {
+      "month": "2026-11",
+      "minDaysOff": 9,
+      "monthlyHours": 176,
+      "noRequests": true,
+      "noExtraHolidays": true
+    },
+    "openDays": 25,
+    "summary": [
+      {
+        "id": "FT001",
+        "shifts": 42,
+        "hours": 168,
+        "workDays": 25,
+        "offDays": 5,
+        "A": 16,
+        "B": 13,
+        "C": 13,
+        "pedsShifts": 0,
+        "singleDays": 8
+      },
+      {
+        "id": "FT002",
+        "shifts": 42,
+        "hours": 168,
+        "workDays": 25,
+        "offDays": 5,
+        "A": 15,
+        "B": 15,
+        "C": 12,
+        "pedsShifts": 0,
+        "singleDays": 8
+      },
+      {
+        "id": "FT003",
+        "shifts": 38,
+        "hours": 152,
+        "workDays": 21,
+        "offDays": 9,
+        "A": 12,
+        "B": 13,
+        "C": 13,
+        "pedsShifts": 9,
+        "singleDays": 4
+      },
+      {
+        "id": "FT004",
+        "shifts": 38,
+        "hours": 152,
+        "workDays": 20,
+        "offDays": 10,
+        "A": 12,
+        "B": 14,
+        "C": 12,
+        "pedsShifts": 8,
+        "singleDays": 2
+      },
+      {
+        "id": "FT005",
+        "shifts": 42,
+        "hours": 168,
+        "workDays": 25,
+        "offDays": 5,
+        "A": 16,
+        "B": 13,
+        "C": 13,
+        "pedsShifts": 0,
+        "singleDays": 8
+      }
+    ],
+    "gaps": [
+      {
+        "date": "2026-11-02",
+        "shift": "C",
+        "ortho": 2,
+        "required": 3,
+        "peds": 1
+      },
+      {
+        "date": "2026-11-04",
+        "shift": "C",
+        "ortho": 2,
+        "required": 3,
+        "peds": 1
+      },
+      {
+        "date": "2026-11-05",
+        "shift": "B",
+        "ortho": 2,
+        "required": 3,
+        "peds": 1
+      },
+      {
+        "date": "2026-11-05",
+        "shift": "C",
+        "ortho": 2,
+        "required": 3,
+        "peds": 1
+      },
+      {
+        "date": "2026-11-06",
+        "shift": "A",
+        "ortho": 2,
+        "required": 3,
+        "peds": 0
+      },
+      {
+        "date": "2026-11-09",
+        "shift": "C",
+        "ortho": 2,
+        "required": 3,
+        "peds": 1
+      },
+      {
+        "date": "2026-11-11",
+        "shift": "C",
+        "ortho": 2,
+        "required": 3,
+        "peds": 1
+      },
+      {
+        "date": "2026-11-12",
+        "shift": "A",
+        "ortho": 2,
+        "required": 3,
+        "peds": 0
+      },
+      {
+        "date": "2026-11-12",
+        "shift": "B",
+        "ortho": 2,
+        "required": 3,
+        "peds": 1
+      },
+      {
+        "date": "2026-11-12",
+        "shift": "C",
+        "ortho": 2,
+        "required": 3,
+        "peds": 1
+      },
+      {
+        "date": "2026-11-16",
+        "shift": "C",
+        "ortho": 2,
+        "required": 3,
+        "peds": 1
+      },
+      {
+        "date": "2026-11-18",
+        "shift": "C",
+        "ortho": 2,
+        "required": 3,
+        "peds": 1
+      },
+      {
+        "date": "2026-11-19",
+        "shift": "A",
+        "ortho": 2,
+        "required": 3,
+        "peds": 0
+      },
+      {
+        "date": "2026-11-19",
+        "shift": "B",
+        "ortho": 2,
+        "required": 3,
+        "peds": 1
+      },
+      {
+        "date": "2026-11-19",
+        "shift": "C",
+        "ortho": 2,
+        "required": 3,
+        "peds": 1
+      },
+      {
+        "date": "2026-11-20",
+        "shift": "A",
+        "ortho": 2,
+        "required": 3,
+        "peds": 0
+      },
+      {
+        "date": "2026-11-23",
+        "shift": "C",
+        "ortho": 2,
+        "required": 3,
+        "peds": 1
+      },
+      {
+        "date": "2026-11-25",
+        "shift": "C",
+        "ortho": 2,
+        "required": 3,
+        "peds": 1
+      },
+      {
+        "date": "2026-11-26",
+        "shift": "B",
+        "ortho": 2,
+        "required": 3,
+        "peds": 1
+      },
+      {
+        "date": "2026-11-26",
+        "shift": "C",
+        "ortho": 2,
+        "required": 3,
+        "peds": 1
+      },
+      {
+        "date": "2026-11-27",
+        "shift": "A",
+        "ortho": 2,
+        "required": 3,
+        "peds": 0
+      },
+      {
+        "date": "2026-11-30",
+        "shift": "B",
+        "ortho": 0,
+        "required": 3,
+        "peds": 0
+      },
+      {
+        "date": "2026-11-30",
+        "shift": "C",
+        "ortho": 2,
+        "required": 3,
+        "peds": 1
+      }
+    ],
+    "overstaffed": [
+      {
+        "date": "2026-11-30",
+        "shift": "A",
+        "ortho": 4,
+        "peds": 0,
+        "combinedLimit": 3
+      }
+    ],
+    "violations": [],
+    "rows": [
+      [
+        "example-peds",
+        "2026-11-01",
+        "FT001",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-01",
+        "FT002",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-01",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-01",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-01",
+        "FT005",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-02",
+        "FT001",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-02",
+        "FT002",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-02",
+        "FT003",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-02",
+        "FT004",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-02",
+        "FT005",
+        "B"
+      ],
+      [
+        "example-peds",
+        "2026-11-03",
+        "FT001",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-03",
+        "FT002",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-03",
+        "FT003",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-03",
+        "FT004",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-03",
+        "FT005",
+        "A"
+      ],
+      [
+        "example-peds",
+        "2026-11-04",
+        "FT001",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-04",
+        "FT002",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-04",
+        "FT003",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-04",
+        "FT004",
+        "C"
+      ],
+      [
+        "example-peds",
+        "2026-11-04",
+        "FT005",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-05",
+        "FT001",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-05",
+        "FT002",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-05",
+        "FT003",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-05",
+        "FT004",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-05",
+        "FT005",
+        "C"
+      ],
+      [
+        "example-peds",
+        "2026-11-06",
+        "FT001",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-06",
+        "FT002",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-06",
+        "FT003",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-06",
+        "FT004",
+        "A"
+      ],
+      [
+        "example-peds",
+        "2026-11-06",
+        "FT005",
+        "C"
+      ],
+      [
+        "example-peds",
+        "2026-11-07",
+        "FT001",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-07",
+        "FT002",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-07",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-07",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-07",
+        "FT005",
+        "A"
+      ],
+      [
+        "example-peds",
+        "2026-11-08",
+        "FT001",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-08",
+        "FT002",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-08",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-08",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-08",
+        "FT005",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-09",
+        "FT001",
+        "B"
+      ],
+      [
+        "example-peds",
+        "2026-11-09",
+        "FT002",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-09",
+        "FT003",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-09",
+        "FT004",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-09",
+        "FT005",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-10",
+        "FT001",
+        "A"
+      ],
+      [
+        "example-peds",
+        "2026-11-10",
+        "FT002",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-10",
+        "FT003",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-10",
+        "FT004",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-10",
+        "FT005",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-11",
+        "FT001",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-11",
+        "FT002",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-11",
+        "FT003",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-11",
+        "FT004",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-11",
+        "FT005",
+        "C"
+      ],
+      [
+        "example-peds",
+        "2026-11-12",
+        "FT001",
+        "C"
+      ],
+      [
+        "example-peds",
+        "2026-11-12",
+        "FT002",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-12",
+        "FT003",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-12",
+        "FT004",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-12",
+        "FT005",
+        "A"
+      ],
+      [
+        "example-peds",
+        "2026-11-13",
+        "FT001",
+        "C"
+      ],
+      [
+        "example-peds",
+        "2026-11-13",
+        "FT002",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-13",
+        "FT003",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-13",
+        "FT004",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-13",
+        "FT005",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-14",
+        "FT001",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-14",
+        "FT002",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-14",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-14",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-14",
+        "FT005",
+        "A"
+      ],
+      [
+        "example-peds",
+        "2026-11-15",
+        "FT001",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-15",
+        "FT002",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-15",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-15",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-15",
+        "FT005",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-16",
+        "FT001",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-16",
+        "FT002",
+        "B"
+      ],
+      [
+        "example-peds",
+        "2026-11-16",
+        "FT003",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-16",
+        "FT004",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-16",
+        "FT005",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-17",
+        "FT001",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-17",
+        "FT002",
+        "B"
+      ],
+      [
+        "example-peds",
+        "2026-11-17",
+        "FT003",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-17",
+        "FT004",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-17",
+        "FT005",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-18",
+        "FT001",
+        "A"
+      ],
+      [
+        "example-peds",
+        "2026-11-18",
+        "FT002",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-18",
+        "FT003",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-18",
+        "FT004",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-18",
+        "FT005",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-19",
+        "FT001",
+        "A"
+      ],
+      [
+        "example-peds",
+        "2026-11-19",
+        "FT002",
+        "C"
+      ],
+      [
+        "example-peds",
+        "2026-11-19",
+        "FT003",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-19",
+        "FT004",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-19",
+        "FT005",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-20",
+        "FT001",
+        "C"
+      ],
+      [
+        "example-peds",
+        "2026-11-20",
+        "FT002",
+        "C"
+      ],
+      [
+        "example-peds",
+        "2026-11-20",
+        "FT003",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-20",
+        "FT004",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-20",
+        "FT005",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-21",
+        "FT001",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-21",
+        "FT002",
+        "A"
+      ],
+      [
+        "example-peds",
+        "2026-11-21",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-21",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-21",
+        "FT005",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-22",
+        "FT001",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-22",
+        "FT002",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-22",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-22",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-22",
+        "FT005",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-23",
+        "FT001",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-23",
+        "FT002",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-23",
+        "FT003",
+        "C"
+      ],
+      [
+        "example-peds",
+        "2026-11-23",
+        "FT004",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-23",
+        "FT005",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-24",
+        "FT001",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-24",
+        "FT002",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-24",
+        "FT003",
+        "B"
+      ],
+      [
+        "example-peds",
+        "2026-11-24",
+        "FT004",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-24",
+        "FT005",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-25",
+        "FT001",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-25",
+        "FT002",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-25",
+        "FT003",
+        "A"
+      ],
+      [
+        "example-peds",
+        "2026-11-25",
+        "FT004",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-25",
+        "FT005",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-26",
+        "FT001",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-26",
+        "FT002",
+        "C"
+      ],
+      [
+        "example-peds",
+        "2026-11-26",
+        "FT003",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-26",
+        "FT004",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-26",
+        "FT005",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-27",
+        "FT001",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-27",
+        "FT002",
+        "A"
+      ],
+      [
+        "example-peds",
+        "2026-11-27",
+        "FT003",
+        "C"
+      ],
+      [
+        "example-peds",
+        "2026-11-27",
+        "FT004",
+        "BC"
+      ],
+      [
+        "example-peds",
+        "2026-11-27",
+        "FT005",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-28",
+        "FT001",
+        "A"
+      ],
+      [
+        "example-peds",
+        "2026-11-28",
+        "FT002",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-28",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-28",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-28",
+        "FT005",
+        "AB"
+      ],
+      [
+        "example-peds",
+        "2026-11-29",
+        "FT001",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-29",
+        "FT002",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-29",
+        "FT003",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-29",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-29",
+        "FT005",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-30",
+        "FT001",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-30",
+        "FT002",
+        "A"
+      ],
+      [
+        "example-peds",
+        "2026-11-30",
+        "FT003",
+        "AC"
+      ],
+      [
+        "example-peds",
+        "2026-11-30",
+        "FT004",
+        "OFF"
+      ],
+      [
+        "example-peds",
+        "2026-11-30",
+        "FT005",
+        "AC"
+      ]
+    ]
+  }
+]
