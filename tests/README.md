@@ -50,3 +50,9 @@ FT003 負責 Pattern 1；FT002 負責 Pattern 2。隨機意願未事先協調，
 
 
 `fairness-2026-11.json`、`five-ft-*.json`、`five-ft-*.csv` 為先前模型的歷史結果，不可視為本次休假定義下的有效公平性證據。`simulate-five-ft.cjs` 與 `simulate-five-ft-random-leave.cjs` 為歷史實驗；目前的 corrected-leave 入口會轉呼叫新的公平性分析。
+
+## 平日輪轉更新
+
+目前引擎的 C/AC/A 與 B 階段共用 `_getWeeklyStaffOrder`：有效 FT 按 ID 排序，同一起點正反序各一週，再將起點後移一位。五人前五週為 12345、54321、23451、15432、34512。人數動態處理，週次仍按當月日曆週索引，每月重新起算；週六仍依單節班累計排序。
+
+`weekly-rotation.test.cjs` 驗證完整十週序列、不同人數、成對平均順位，以及兩個平日階段使用相同順序。現存公平性 JSON 是本次輪轉修改前的歷史結果；若重新執行分析，將以新輪轉覆寫 coverage 結果。順位對稱並不保證實際班型公平，且本次尚未實作每日最低覆蓋修補。
