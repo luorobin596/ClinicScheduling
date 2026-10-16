@@ -66,16 +66,24 @@
 ## F01：共用公平性統計
 
 - [ ] 完成此任務。
-- 驗收：自選單節排除、PEDS 非自願單節納入、指定雙班納入；引擎與測試對相同 context 統計一致。
+- 驗收：自選單節排除、PEDS 非自願單節按月累計，指定雙班納入每週班型；引擎與測試對相同 context 及週切分一致。
 - 依賴：S03。
 - 預計檔案：scheduling_engine.js；tests/fairness-adjustment.test.cjs；tests/analyze-fairness.cjs。
 - 聚焦驗證：`node --test --test-name-pattern="F01" tests/fairness-adjustment.test.cjs`。
 
+## F01b：個人應排工時與達成率
+
+- [ ] 完成此任務。
+- 驗收：只依完整原始休假日期/額度計算 C，半天/全天/指定雙班分別扣 1/2/0，C=168/144、H=140/120 的比例相同；零分母 N/A、H>0 的零基準報錯，空班不降低分母。
+- 依賴：F01。
+- 預計檔案：scheduling_engine.js；tests/fairness-adjustment.test.cjs；tests/analyze-fairness.cjs。
+- 聚焦驗證：`node --test --test-name-pattern="F01b" tests/fairness-adjustment.test.cjs`。
+
 ## F02：公平性向量與比較器
 
 - [ ] 完成此任務。
-- 驗收：S 依單節→AC→BC/AB同級→工時比較並符合手算；拒絕以低優先改善抵銷高優先惡化，同 S 不接受。
-- 依賴：F01。
+- 驗收：S 依月單節→月工時達成率→週AC→週BC/AB同級比較，符合手算；個人月合計相同但週分配不同能區分，低優先不得抵銷高優先惡化，同 S 不接受。
+- 依賴：F01b。
 - 預計檔案：scheduling_engine.js；tests/fairness-adjustment.test.cjs。
 - 聚焦驗證：`node --test --test-name-pattern="F02" tests/fairness-adjustment.test.cjs`。
 
