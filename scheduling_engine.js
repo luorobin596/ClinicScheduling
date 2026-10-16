@@ -171,7 +171,9 @@ var SchedulingEngine = {
             if (isOff) {
               // ★ 觸發代班邏輯
               // 找到另一位 PEDS 醫生 (排除自己)
-              const substitute = pedsList.find(id => id !== originalStaff);
+              const substitute = pedsList.find(id => id !== originalStaff &&
+                !dayReqs.some(r => r.staff_id === id && r.shift === s.shift && r.type === 'off') &&
+                !day.slots[s.shift].PEDS.staff.includes(id));
               
               if (substitute) {
                 day.slots[s.shift].PEDS.staff.push(substitute);
@@ -179,8 +181,7 @@ var SchedulingEngine = {
                 day.slots[s.shift].PEDS.note = `${originalStaff} OFF, PEDs由${substitute}代理`;
               } else {
                 // 萬一找不到代班人 (雖然不太可能)，還是標記一下
-                day.slots[s.shift].PEDS.source = "CONFLICT";
-                day.slots[s.shift].PEDS.note = `${originalStaff} OFF, 無人代理`;
+                throw new Error(`小兒代班衝突：${day.date} ${s.shift} 班，${originalStaff} 休假且無可用代班者，請調整休假。`);
               }
 
             } else {
@@ -202,7 +203,12 @@ var SchedulingEngine = {
             const isAlreadyInPeds = day.slots[req.shift].PEDS.staff.includes(req.staff_id);
 
             if (!isAlreadyInPeds) {
-              // 只有不在 PEDS 裡，才加到 ORTHO
+              // 固定班也須遵守骨科上限，不能繞過自動排班的人數檢查。
+              const shiftConfig = day.dayOfWeek === 6 ? RulesConfig.SHIFTS.SATURDAY : RulesConfig.SHIFTS.WEEKDAY;
+              const maxStaff = shiftConfig[req.shift].req_total;
+              if (this._getOrthoShiftCount(day, req.shift) >= maxStaff) {
+                throw new Error(`骨科固定班超額：${day.date} ${req.shift} 班上限 ${maxStaff} 人，請調整指定班。`);
+              }
               day.slots[req.shift].ORTHO.staff.push(req.staff_id);
               day.slots[req.shift].ORTHO.source = "FT_FIXED";
             } else {
@@ -221,16 +227,25 @@ var SchedulingEngine = {
 
   
   /**
+   * 依有效 FT 名單產生每週順序（weekIndex 從 0 起算）。
+   * 同一起點正排、反排各一週，再輪替起點；不修改傳入名單。
+   * 例：12345 → 54321 → 23451 → 15432 → 34512。
+   */
+  _getWeeklyStaffOrder: function(staffList, weekIndex) {
+    const sortedStaff = staffList.slice().sort((a, b) => a.id.localeCompare(b.id));
+    if (sortedStaff.length === 0) return [];
+
+    const offset = Math.floor(weekIndex / 2) % sortedStaff.length;
+    const order = [...sortedStaff.slice(offset), ...sortedStaff.slice(0, offset)];
+    return weekIndex % 2 === 0 ? order : order.reverse();
+  },
+
+  /**
    * ★ 核心：逐人排班 (C -> AC -> A)
    */
   _assignWeekdayShifts: function(context) {
     // 1. 取得員工名單
-    let staffList = RepoStaff.getAvailableStaff('FT'); // 
-
-    // ★ 修改 A：強制排序，為了讓輪替有意義，必須確保每次拿到的初始名單順序是一樣的 (例如依 ID 排序)
-    staffList.sort((a, b) => {
-        return a.id.localeCompare(b.id); 
-    });
+    const staffList = RepoStaff.getAvailableStaff('FT');
 
     const weeks = this._groupDaysByWeek(context.days);
     const dailyLimits = RulesConfig.RULES.FT_DAILY_LIMITS;
@@ -248,18 +263,8 @@ var SchedulingEngine = {
 
       console.log(`\n=== [Week ${wIndex + 1}] 平日排班開始 (Days: ${targetDays.length}) ===`);
 
-      // ★ 修改 B：輪替邏輯 (Round-Robin) 取代原本的 _pickRandom
-      // wIndex = 0 (第一週) -> offset = 0
-      // wIndex = 1 (第二週) -> offset = 1 ... 以此類推
-      const count = staffList.length;
-      const offset = wIndex % count; // 取餘數，避免週數超過人數時報錯
-
-      // 製作輪替後的名單
-      // 邏輯：把陣列切成兩半 [後半段] + [前半段]
-      const rotatedStaff = [
-        ...staffList.slice(offset),     // 從 offset 開始到最後
-        ...staffList.slice(0, offset)   // 從 0 到 offset
-      ];
+      // 每兩週使用同一起點的正反序，再輪替起點。
+      const rotatedStaff = this._getWeeklyStaffOrder(staffList, wIndex);
 
       // 印出當週順序 (方便您 Debug 確認是否有輪替)
       const orderStr = rotatedStaff.map(s => s.id).join(" -> ");
@@ -290,7 +295,7 @@ var SchedulingEngine = {
                 if (!this._isStaffAvailableForShift(day, staffId, 'C')) return false;
 
                 // 2. ★ 新增：檢查 C 班每日人數上限
-                const currentCount = this._getShiftCount(day, 'C');
+                const currentCount = this._getOrthoShiftCount(day, 'C');
                 if (currentCount >= MAX_C_PER_DAY) return false;
 
                 return true; // 通過所有檢查
@@ -298,8 +303,8 @@ var SchedulingEngine = {
 
             // ★ 排序邏輯：優先填補空缺 (0人 > 1人 > 2人)
             cCandidates.sort((a, b) => {
-                const countA = this._getShiftCount(a, 'C');
-                const countB = this._getShiftCount(b, 'C');
+                const countA = this._getOrthoShiftCount(a, 'C');
+                const countB = this._getOrthoShiftCount(b, 'C');
                 return countA - countB; // 小的排前面 (0, 1, 2)
             });
 
@@ -326,7 +331,8 @@ var SchedulingEngine = {
                 // 必須已經有 C，且還沒有 A
                 if (hasC && !hasA) {
                     // 必須符合 A 班的排班規則 (Ortho A 沒休假)
-                    return this._isStaffAvailableForShift(day, staffId, 'A') &&
+                    return this._getOrthoShiftCount(day, 'A') < MAX_A_PER_DAY &&
+                           this._isStaffAvailableForShift(day, staffId, 'A') &&
                            this._checkDailyRules(day, staffId, 'A', dailyLimits);
                 }
                 return false;
@@ -334,8 +340,8 @@ var SchedulingEngine = {
 
             // 挑選策略：優先選 A 班人少的日子 (避免那天 A 班爆滿)
             acCandidates.sort((a, b) => {
-                const countA = this._getShiftCount(a, 'A');
-                const countB = this._getShiftCount(b, 'A');
+                const countA = this._getOrthoShiftCount(a, 'A');
+                const countB = this._getOrthoShiftCount(b, 'A');
                 return countA - countB;
             });
 
@@ -364,7 +370,7 @@ var SchedulingEngine = {
                 if (!this._checkDailyRules(day, staffId, 'A', dailyLimits)) return false;
 
                 // 2. ★ 新增：檢查 A 班每日人數上限
-                const currentCountA = this._getShiftCount(day, 'A');
+                const currentCountA = this._getOrthoShiftCount(day, 'A');
                 if (currentCountA >= MAX_A_PER_DAY) return false;
 
                 return true; // 通過所有檢查
@@ -373,8 +379,8 @@ var SchedulingEngine = {
             // ★ 排序邏輯：優先填補空缺 (0人 > 1人 > 2人)
             // 這一步是解決 A 班開天窗的關鍵
             aCandidates.sort((a, b) => {
-                const countA = this._getShiftCount(a, 'A');
-                const countB = this._getShiftCount(b, 'A');
+                const countA = this._getOrthoShiftCount(a, 'A');
+                const countB = this._getOrthoShiftCount(b, 'A');
                 return countA - countB;
             });
 
@@ -403,12 +409,7 @@ var SchedulingEngine = {
    */
   _assignWeekdayBShifts: function(context) {
     // 1. 取得員工名單
-    let staffList = RepoStaff.getAvailableStaff('FT'); // 
-
-    // ★ 新增步驟 A：強制排序 (確保每週起始順序固定)
-    staffList.sort((a, b) => {
-        return a.id.localeCompare(b.id); 
-    });
+    const staffList = RepoStaff.getAvailableStaff('FT');
 
     const weeks = this._groupDaysByWeek(context.days);
     const dailyLimits = RulesConfig.RULES.FT_DAILY_LIMITS;
@@ -428,15 +429,8 @@ var SchedulingEngine = {
 
       console.log(`\n=== [Week ${wIndex + 1}] B 班排班開始 (策略: 優先湊 BC > AB) ===`);
 
-      // ★ 新增步驟 B：計算輪替順序
-      const count = staffList.length;
-      const offset = wIndex % count;
-
-      // 製作輪替後的名單
-      const rotatedStaff = [
-        ...staffList.slice(offset),     // 後半段移到前面
-        ...staffList.slice(0, offset)   // 前半段移到後面
-      ];
+      // 每兩週使用同一起點的正反序，再輪替起點。
+      const rotatedStaff = this._getWeeklyStaffOrder(staffList, wIndex);
 
       // 印出 Log 確認順序
       console.log(`  > 本週 B 班優先順序: ${rotatedStaff.map(s => s.id).join(" -> ")}`);
@@ -466,7 +460,7 @@ var SchedulingEngine = {
                 if (!this._isStaffAvailableForShift(day, staffId, 'B')) return false;
                 
                 // (3) 當天 B 班人數已滿 -> 跳過
-                const currentCount = this._getShiftCount(day, 'B');
+                const currentCount = this._getOrthoShiftCount(day, 'B');
                 if (currentCount >= MAX_B_PER_DAY) return false;
 
                 // (4) ★ 禁止 ABC (若已有 AC，不可排 B)
@@ -501,8 +495,8 @@ var SchedulingEngine = {
                 }
 
                 // 優先權 3: 如果都沒有 Pattern，才依照原本的填坑邏輯 (0 > 1 > 2)
-                const countA = this._getShiftCount(a, 'B');
-                const countB = this._getShiftCount(b, 'B');
+                const countA = this._getOrthoShiftCount(a, 'B');
+                const countB = this._getOrthoShiftCount(b, 'B');
                 return countA - countB;
             });
 
@@ -598,11 +592,11 @@ var SchedulingEngine = {
   },
 
   /**
-   * 輔助：取得當天某班別的人數 (包含 Ortho + Peds)
+   * 輔助：取得當天骨科班別人數；小兒科不占骨科需求名額
    */
-  _getShiftCount: function(day, shift) {
+  _getOrthoShiftCount: function(day, shift) {
     if (!day.slots[shift]) return 999;
-    return day.slots[shift].ORTHO.staff.length + day.slots[shift].PEDS.staff.length;
+    return day.slots[shift].ORTHO.staff.length;
   },
 
   /**
@@ -793,8 +787,8 @@ var SchedulingEngine = {
       });
 
       // 追蹤目前的填入狀況
-      let currentA = 0;
-      let currentB = 0;
+      let currentA = this._getOrthoShiftCount(day, 'A');
+      let currentB = this._getOrthoShiftCount(day, 'B');
 
       // 第一輪：盡量給每個人 AB (如果是 3 人週，前 2 人拿 AB，第 3 人拿剩下的)
       available.forEach(staff => {
