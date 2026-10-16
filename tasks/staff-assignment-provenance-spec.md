@@ -2,7 +2,7 @@
 
 狀態：待審閱，僅規格，尚未實作。日期：2026-10-16。
 
-本規格是後續最低覆蓋修補與公平性調整的前置條件，關聯文件：[整體調整方案](plan.md)、[待辦](todo.md)。本次能力範圍是讓每筆員工排班具備正確來源與可移動性判斷；不在本規格內實作修補搜尋或公平性最佳化。
+本規格是後續最低覆蓋修補與公平性調整的前置條件，關聯文件：[整體調整方案](plan.md)、[覆蓋與公平性規格](coverage-fairness-spec.md)、[待辦](todo.md)。本次能力範圍是讓每筆員工排班具備正確來源與可移動性判斷；不在本規格內實作修補搜尋或公平性最佳化。
 
 ## 1. 目標與已確認問題
 
@@ -56,6 +56,14 @@ ORTHO: {
 - off 既有陣列可暫保留供讀取，但須由相同正規化 requests 建立，避免與 constraints 不一致。
 - 不同來源重複指向同一人同班時，不重複加入 staff；例如小兒已排該人且個人亦指定該班，保留一筆 PEDS 指派、原小兒來源及兩種鎖定原因，不再新增 ORTHO。
 
+### 3.1 正規化及來源契約補充
+
+- 執行一次時對 runId/date/staff_id/shift 正規化一次：沿用同一時區工具處理 Date 與 yyyy-MM-dd/yyyy/MM/dd，staff_id 去除首尾空白，shift 僅 A/B/C。禁止候選流程自行用不同時區重算日期。
+- origin 僅為 STAFF_REQUEST、PEDS_FIXED、PEDS_COVER、AUTO；lockReasons 僅使用前三者，可同時存在。PEDS_FIXED/PEDS_COVER 是記憶體類型，輸出仍保留 FT_FIXED/AUTO_COVER。
+- constraints 使用可序列化的鍵值物件，固定/禁止位置鍵由規範化欄位組成（例如 JSON.stringify 的欄位陣列），不可用容易混淆的字串拼接。候選副本只複製排班與 metadata，不能修改原始 constraints；不可用 JSON clone Set/Map 而遺失限制。
+- 相同 person/date/shift 的重複 fixed 合併，不新增第二人；同人同班 fixed/off 衝突報 INPUT_CONFLICT。新增自動來源不得覆寫既存固定來源；PEDS 與本人指定重疊的合併規則仍以第 3 節為準。
+- 覆蓋修補及公平性改動時 source 擬分別為 COVERAGE_REPAIR、FAIRNESS_ADJUST；originalSource/origin 保留初始事實，歷程保存所有前後位置與來源。這些新增代碼須在整合測試中確認前台不依來源字串作舊式固定判斷。
+
 ## 4. 寫入及修改行為
 
 1. 集中使用指派新增/移除/移動/交換入口，staff 與 assignmentMeta 必須同步變動，禁止各階段直接 push 員工再改共用 source。
@@ -108,6 +116,12 @@ const sourceSlot1 = id ? data.assignmentMeta[id].source : '';
 | A12 | 同批 100 組意願做來源修改前後比較 | 人選、日期班別站別、班數、工時及公平性統計不變，逐人來源正確 |
 | A13 | 移動/交換試算失敗 | staff、metadata、constraints 與歷程均未部分變動 |
 
+### 7.1 驗收階段界線
+
+A12 僅比較同一個合法基準及同一個統計器下的排班事實，不強制修正原有最低覆蓋缺失，也不在這一步切換公平性定義。來源修正、F01 統計修正、覆蓋修補是不同的可驗證增量。非法意願的輸入診斷新增需有專門測試，不適用「仍照舊產生非法班表」的等價承諾。
+
+A13 的移動/交換完整契約由 R02 實作；S02～S07 不要求先完成修補或公平性搜尋。Google 寫入前資料驗證失敗應保證零刪寫；實際多次 I/O 失敗不承諾原子交易，依覆蓋規格第 8 節回報階段及恢復快照。
+
 ## 8. 實作順序與驗證方式（建議，未開始執行）
 
 1. 先寫混合來源覆寫的失敗測試，再新增 metadata 與統一指派入口。
@@ -115,6 +129,8 @@ const sourceSlot1 = id ? data.assignmentMeta[id].source : '';
 3. 改輸出依 ID 取來源，加入清除舊資料前的完整驗證及假 Sheet 儲存測試。
 4. 補鎖定與後續調整的契約測試；用同批 100 組測試驗證排班結果不變。
 5. 回報差異與剩餘限制，再銜接最低覆蓋修補；不自動部署線上 Library。
+
+任務粒度及依賴以 todo.md 的 S01～S07、F01、R02 為準；以下五步僅為摘要，不是可直接勾選的大任務。
 
 主要檔案：scheduling_engine.js；測試放 tests/，沿用 tests/support/engine-harness.cjs、leave-model.cjs。預計新增 tests/assignment-provenance.test.cjs；必要時擴充假 Sheet 以驗證實際輸出列及不刪舊資料。
 
