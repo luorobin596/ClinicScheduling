@@ -17,6 +17,8 @@
 
 ## 意願與鎖定來源
 
+逐人來源與鎖定的詳細前置規格見 [staff-assignment-provenance-spec.md](staff-assignment-provenance-spec.md)。
+
 從當月 requests 的 fixed/off 及初始化完成後的 PEDS 指派建立 staff/date/shift/station 鎖定集合，不能依賴 slot.source，因現有 source 為多人共用欄位，後續排班會覆寫。
 
 全天休 ABC off；半天休一個 fixed、其餘 off；指定雙班兩個 fixed、其餘 off。只有個人選擇的一班 fixed 加另外兩班 off（週六只檢查可營業時段）的單節班屬自願。PEDS 來源為固定不等於自願；若本人確實選半天休且與實際單節相符，仍按本人意願排除。
