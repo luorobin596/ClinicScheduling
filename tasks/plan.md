@@ -3,6 +3,7 @@
 狀態：2026-10-19 已完成本機實作、回歸與模擬；保留每兩週正反序輪轉，未更新線上 Library。實際結果與剩餘限制見 [測試報告](../tests/results/summary.md)。
 
 文件索引：
+- [週六分配增補規格](saturday-allocation-spec.md)：2026-10-19 待審閱；整日方案、工時達成率、效率與驗收，尚未實作。
 - [來源與鎖定規格](staff-assignment-provenance-spec.md)：逐人來源、輸出欄位與不可變意願。
 - [覆蓋與公平性規格](coverage-fairness-spec.md)：候選、評分、分階段驗證、預算與重試。
 - [小型任務清單](todo.md)：20 個任務的依賴、驗收、檔案與聚焦命令。
