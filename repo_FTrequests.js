@@ -61,10 +61,11 @@ var RepoRequests = {
     const ss = getDbSpreadsheet();
     const sheet = ss.getSheetByName(CONFIG.SHEET_NAMES.FT_REQUESTS);
     const data = sheet.getDataRange().getValues();
-    if (data.length < 2) return [];
+    if (data.length < 2) { const empty = []; empty.submittedStaffIds = []; return empty; }
 
     const staffMap = RepoStaff.getStaffMap();
     const result = [];
+    result.submittedStaffIds = [];
     
     // 目標 RunID (字串化)
     const targetRunId = String(runId);
@@ -84,7 +85,8 @@ var RepoRequests = {
       if (String(rowRunId) !== targetRunId) continue;
       // --------------------------------------------------
 
-      const sId = String(row[1]);
+      const sId = String(row[1]).trim();
+      if (!result.submittedStaffIds.includes(sId)) result.submittedStaffIds.push(sId);
       const name = staffMap[sId] || sId;
 
       // 解析 D 欄: 休假

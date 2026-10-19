@@ -8,13 +8,35 @@ var SchedulingEngine = {
   /**
    * 主入口：執行排班 (第一階段：初始化 + 固定診填充)
    */
-  generateSchedule: function(runId) {
+  generateSchedule: function(runId, options) {
+    const context = this.generateInitialSchedule(runId);
+    const staff = context.staffList;
+    const settings = Object.assign({}, SCHEDULE_SEARCH_OPTIONS, options || {});
+    const now = settings.now || Date.now;
+    settings.deadline = now() + settings.timeLimitMs;
+    const initialStats = ScheduleFairness.measure(context, staff);
+    ScheduleAdjustments.validate(context, staff, { requireMinimumCoverage: false });
+    const repaired = ScheduleAdjustments.repair(context, staff, settings);
+    const optimized = ScheduleAdjustments.improve(repaired.context, staff, settings);
+    const result = optimized.context;
+    result.adjustmentReport = {
+      initial: initialStats, coverageRepaired: ScheduleFairness.measure(repaired.context, staff),
+      fairnessAdjusted: optimized.report.after, repair: repaired.report, fairness: optimized.report
+    };
+    ScheduleAdjustments.validate(result, staff, { requireMinimumCoverage: true });
+    this.saveToScheduleOutput(result);
+    return result;
+  },
+
+  generateInitialSchedule: function(runId) {
     // 1. 初始化 Context (解析日期與營業規則)
     const context = this.createContext(runId);
+    context.staffList = RepoStaff.getAvailableStaff('FT');
     
     // 2. 獲取規則與申請資料
-    const pedsRules = RulesConfig.getPedsRules ? RulesConfig.getPedsRules() : RulesConfig.RULES.PEDS_RULES.patterns;
+    const pedsRules = RulesConfig.getPedsRules ? RulesConfig.getPedsRules(context.settings) : RulesConfig.RULES.PEDS_RULES.patterns;
     const ftRequests = RepoRequests.getAllRequestsByRun(context.runIdStr);
+    if (ftRequests.submittedStaffIds) context.submittedStaffIds = ftRequests.submittedStaffIds.slice();
 
     // 3. 執行填充邏輯
     console.log("--- 階段 1: 填充固定班與小兒科 ---");
@@ -28,14 +50,14 @@ var SchedulingEngine = {
     this._assignWeekdayBShifts(context);
 
     // 4-1. 統計平日產生的「非自願單節班」
-    const staffList = RepoStaff.getAvailableStaff('FT');
+    const staffList = context.staffList || RepoStaff.getAvailableStaff('FT');
     const singleShiftStats = this._auditSingleShiftFairness(context, staffList);
 
     // 4-2. 執行週六排班 (傳入統計數據以平衡分配)
     this._assignSaturdayShifts(context, singleShiftStats);
 
-    // 5. 將結果儲存至 Schedule_Output 表格
-    this.saveToScheduleOutput(context);
+    // Initial roster is audited and adjusted before any output write.
+    ScheduleAssignments.validateMetadata(context);
 
     console.log(`[Engine] 排班完成。月份: ${context.runIdStr}`);
     return context;
@@ -46,23 +68,19 @@ var SchedulingEngine = {
    * @param {string|Date} runIdInput - 目標月份 (支援 Date 物件或 "2026-02" 字串)
    */
   createContext: function(runIdInput) {
-    const dynamicSettings = RulesConfig.loadDynamicConfig();
-    
-    // --- 修正重點 1：強健的日期解析 ---
-    let year, month, runIdStr;
-    
-    if (runIdInput instanceof Date) {
-      year = runIdInput.getFullYear();
-      month = runIdInput.getMonth(); // 0-based
-      // 轉成字串供後續使用 (yyyy-MM)
-      runIdStr = Utilities.formatDate(runIdInput, Session.getScriptTimeZone(), "yyyy-MM");
+    let runIdStr;
+    if (Object.prototype.toString.call(runIdInput) === '[object Date]' && !isNaN(runIdInput.getTime())) {
+      runIdStr = Utilities.formatDate(runIdInput, Session.getScriptTimeZone(), 'yyyy-MM');
     } else {
-      // 假設是字串 "2026-02"
-      runIdStr = String(runIdInput);
-      const parts = runIdStr.split('-');
-      year = parseInt(parts[0]);
-      month = parseInt(parts[1]) - 1; // 轉為 0-based
+      const match = /^(\d{4})-(\d{1,2})$/.exec(String(runIdInput || '').trim());
+      if (!match || Number(match[2]) < 1 || Number(match[2]) > 12) {
+        throw ScheduleAssignments.error('INPUT_CONFLICT', '無效排班月份，必須為 yyyy-MM', { runId: String(runIdInput) });
+      }
+      runIdStr = `${match[1]}-${match[2].padStart(2, '0')}`;
     }
+    const year = Number(runIdStr.slice(0, 4));
+    const month = Number(runIdStr.slice(5)) - 1;
+    const dynamicSettings = RulesConfig.loadDynamicConfig();
 
     const startDate = new Date(year, month, 1);
     const endDate = new Date(year, month + 1, 0); 
@@ -119,6 +137,7 @@ var SchedulingEngine = {
    * 目標：將小兒科 (PEDS) 和 正職指定班 (Fixed) 填入 slots
    */
   _fillFixedShifts: function(context, pedsRules, requests) {
+    requests = ScheduleAssignments.prepare(context, requests);
     // 1. 整理申請資料 Map (Key: yyyy-MM-dd)
     const reqMap = {};
     requests.forEach(r => {
@@ -139,14 +158,6 @@ var SchedulingEngine = {
 
     context.days.forEach(day => {
       if (!day.isOpen) return;
-
-      // 初始化容器 (新增 note 欄位)
-      Object.keys(day.slots).forEach(shift => {
-        day.slots[shift] = {
-          ORTHO: { staff: [], off: [], source: "", note: "" },
-          PEDS: { staff: [], off: [], source: "", note: "" }
-        };
-      });
 
       // 取得當日的申請資料
       const dayReqs = reqMap[day.date] || [];
@@ -176,18 +187,18 @@ var SchedulingEngine = {
                 !day.slots[s.shift].PEDS.staff.includes(id));
               
               if (substitute) {
-                day.slots[s.shift].PEDS.staff.push(substitute);
-                day.slots[s.shift].PEDS.source = "AUTO_COVER"; // 標記為自動代班
+                ScheduleAssignments.add(day, s.shift, 'PEDS', substitute, 'AUTO_COVER', 'PEDS_COVER', ['PEDS_COVER']);
+                context.constraints.peds[ScheduleAssignments.key(day.date, s.shift, substitute)] = true; // 標記為自動代班
                 day.slots[s.shift].PEDS.note = `${originalStaff} OFF, PEDs由${substitute}代理`;
               } else {
                 // 萬一找不到代班人 (雖然不太可能)，還是標記一下
-                throw new Error(`小兒代班衝突：${day.date} ${s.shift} 班，${originalStaff} 休假且無可用代班者，請調整休假。`);
+                throw ScheduleAssignments.error('INPUT_CONFLICT', `小兒代班衝突：${day.date} ${s.shift} 班，${originalStaff} 休假且無可用代班者，請調整休假。`, { date: day.date, shift: s.shift, id: originalStaff });
               }
 
             } else {
               // 正常排班
-              day.slots[s.shift].PEDS.staff.push(originalStaff);
-              day.slots[s.shift].PEDS.source = "FT_FIXED";
+              ScheduleAssignments.add(day, s.shift, 'PEDS', originalStaff, 'FT_FIXED', 'PEDS_FIXED', ['PEDS_FIXED']);
+              context.constraints.peds[ScheduleAssignments.key(day.date, s.shift, originalStaff)] = true;
             }
           }
         });
@@ -207,12 +218,13 @@ var SchedulingEngine = {
               const shiftConfig = day.dayOfWeek === 6 ? RulesConfig.SHIFTS.SATURDAY : RulesConfig.SHIFTS.WEEKDAY;
               const maxStaff = shiftConfig[req.shift].req_total;
               if (this._getOrthoShiftCount(day, req.shift) >= maxStaff) {
-                throw new Error(`骨科固定班超額：${day.date} ${req.shift} 班上限 ${maxStaff} 人，請調整指定班。`);
+                throw ScheduleAssignments.error('INPUT_CONFLICT', `骨科固定班超額：${day.date} ${req.shift} 班上限 ${maxStaff} 人，請調整指定班。`, { date: day.date, shift: req.shift, id: req.staff_id });
               }
-              day.slots[req.shift].ORTHO.staff.push(req.staff_id);
-              day.slots[req.shift].ORTHO.source = "FT_FIXED";
+              ScheduleAssignments.add(day, req.shift, 'ORTHO', req.staff_id, 'FT_FIXED', 'STAFF_REQUEST', ['STAFF_REQUEST']);
             } else {
-              // 如果已經在 PEDS，這裡什麼都不做 (維持小兒班身分)
+              // Preserve pediatric origin while also recording the personal fixed request.
+              const meta = day.slots[req.shift].PEDS.assignmentMeta[req.staff_id];
+              if (!meta.lockReasons.includes('STAFF_REQUEST')) meta.lockReasons.push('STAFF_REQUEST');
               console.log(`[修正] ${day.date} ${req.staff_id} 指定 ${req.shift} 班，但已是小兒班，跳過 ORTHO 新增。`);
             }
 
@@ -223,6 +235,8 @@ var SchedulingEngine = {
         }
       });
     });
+    Object.values(context.constraints).forEach(map => Object.freeze(map));
+    Object.freeze(context.constraints);
   },
 
   
@@ -245,7 +259,7 @@ var SchedulingEngine = {
    */
   _assignWeekdayShifts: function(context) {
     // 1. 取得員工名單
-    const staffList = RepoStaff.getAvailableStaff('FT');
+    const staffList = context.staffList || RepoStaff.getAvailableStaff('FT');
 
     const weeks = this._groupDaysByWeek(context.days);
     const dailyLimits = RulesConfig.RULES.FT_DAILY_LIMITS;
@@ -293,6 +307,7 @@ var SchedulingEngine = {
                 
                 // 1. 基本可用性檢查
                 if (!this._isStaffAvailableForShift(day, staffId, 'C')) return false;
+                if (!this._checkDailyRules(day, staffId, 'C', dailyLimits)) return false;
 
                 // 2. ★ 新增：檢查 C 班每日人數上限
                 const currentCount = this._getOrthoShiftCount(day, 'C');
@@ -311,8 +326,7 @@ var SchedulingEngine = {
             // 選取前 N 個
             const assignedC = cCandidates.slice(0, neededC);
             assignedC.forEach(day => {
-                day.slots['C'].ORTHO.staff.push(staffId);
-                day.slots['C'].ORTHO.source = "AUTO_C_PHASE1";
+                ScheduleAssignments.add(day, 'C', 'ORTHO', staffId, 'AUTO_C_PHASE1');
             });
             // 更新狀態
             stats = this._getStaffWeeklyStats(staffId, targetDays); 
@@ -347,8 +361,7 @@ var SchedulingEngine = {
 
             if (acCandidates.length > 0) {
                 const selectedDay = acCandidates[0];
-                selectedDay.slots['A'].ORTHO.staff.push(staffId);
-                selectedDay.slots['A'].ORTHO.source = "AUTO_A_AC_LOCK";
+                ScheduleAssignments.add(selectedDay, 'A', 'ORTHO', staffId, 'AUTO_A_AC_LOCK');
                 // console.log(`    - 鎖定 AC @ ${selectedDay.date}`);
             }
             // 更新狀態
@@ -386,8 +399,7 @@ var SchedulingEngine = {
 
             const assignedA = aCandidates.slice(0, neededA);
             assignedA.forEach(day => {
-                day.slots['A'].ORTHO.staff.push(staffId);
-                day.slots['A'].ORTHO.source = "AUTO_A_PHASE3";
+                ScheduleAssignments.add(day, 'A', 'ORTHO', staffId, 'AUTO_A_PHASE3');
             });
         }
 
@@ -409,7 +421,7 @@ var SchedulingEngine = {
    */
   _assignWeekdayBShifts: function(context) {
     // 1. 取得員工名單
-    const staffList = RepoStaff.getAvailableStaff('FT');
+    const staffList = context.staffList || RepoStaff.getAvailableStaff('FT');
 
     const weeks = this._groupDaysByWeek(context.days);
     const dailyLimits = RulesConfig.RULES.FT_DAILY_LIMITS;
@@ -503,14 +515,13 @@ var SchedulingEngine = {
             // 5. 填入
             const assignedB = candidates.slice(0, neededB);
             assignedB.forEach(day => {
-                day.slots['B'].ORTHO.staff.push(staffId);
                 // 根據來源給予不同的標記，方便 Debug
                 if (this._hasShift(day, staffId, 'C')) {
-                    day.slots['B'].ORTHO.source = "AUTO_B_BC_PATTERN";
+                    ScheduleAssignments.add(day, 'B', 'ORTHO', staffId, 'AUTO_B_BC_PATTERN');
                 } else if (this._hasShift(day, staffId, 'A')) {
-                    day.slots['B'].ORTHO.source = "AUTO_B_AB_PATTERN";
+                    ScheduleAssignments.add(day, 'B', 'ORTHO', staffId, 'AUTO_B_AB_PATTERN');
                 } else {
-                    day.slots['B'].ORTHO.source = "AUTO_B_FILL";
+                    ScheduleAssignments.add(day, 'B', 'ORTHO', staffId, 'AUTO_B_FILL');
                 }
             });
         }
@@ -661,62 +672,9 @@ var SchedulingEngine = {
    * 排除：如果當天沒上的時段是因為「休假(OFF)」，則視為自願單節，不列入計算。
    */
   _auditSingleShiftFairness: function(context, staffList) {
-    console.log("\n=== 單節班公平性審計 (Fairness Audit) ===");
-    
-    // 初始化計數器
+    const metrics = ScheduleFairness.measure(context, staffList);
     const singleShiftCounts = {};
-    staffList.forEach(s => singleShiftCounts[s.id] = 0);
-
-    context.days.forEach(day => {
-      // 只計算平日 (因為這是平日排完後執行的)
-      if (day.dayOfWeek < 1 || day.dayOfWeek > 5 || !day.isOpen) return;
-
-      staffList.forEach(staff => {
-        const staffId = staff.id;
-        
-        // 檢查當日班別
-        const hasA = this._hasShift(day, staffId, 'A');
-        const hasB = this._hasShift(day, staffId, 'B');
-        const hasC = this._hasShift(day, staffId, 'C');
-        const shiftCount = (hasA ? 1 : 0) + (hasB ? 1 : 0) + (hasC ? 1 : 0);
-
-        // ★ 核心邏輯：只抓單節班 (Count === 1)
-        if (shiftCount === 1) {
-          let isVoluntary = false;
-
-          // 判斷是否為自願 (即：沒上的那兩節，是不是都休假了？)
-          // 情況 1: 只有 A (檢查 B 和 C 是否休假)
-          if (hasA) {
-            const offB = !this._isStaffAvailableForShift(day, staffId, 'B');
-            const offC = !this._isStaffAvailableForShift(day, staffId, 'C');
-            if (offB && offC) isVoluntary = true;
-          }
-          // 情況 2: 只有 B (檢查 A 和 C 是否休假)
-          else if (hasB) {
-            const offA = !this._isStaffAvailableForShift(day, staffId, 'A');
-            const offC = !this._isStaffAvailableForShift(day, staffId, 'C');
-            if (offA && offC) isVoluntary = true;
-          }
-          // 情況 3: 只有 C (檢查 A 和 B 是否休假)
-          else if (hasC) {
-            const offA = !this._isStaffAvailableForShift(day, staffId, 'A');
-            const offB = !this._isStaffAvailableForShift(day, staffId, 'B');
-            if (offA && offB) isVoluntary = true;
-          }
-
-          if (!isVoluntary) {
-            singleShiftCounts[staffId]++;
-            // console.log(`  > ${day.date} ${staffId} 被系統分配單節班 (非自願)`);
-          }
-        }
-      });
-    });
-
-    // 寫入 Log 並回傳統計結果
-    staffList.forEach(staff => {
-      const count = singleShiftCounts[staff.id];
-      console.log(`  > ${staff.id} 本月非自願單節共計 ${count} 節，列入平分計算`);
-    });
+    metrics.staff.forEach(person => { singleShiftCounts[person.id] = person.involuntarySingle; });
 
     return singleShiftCounts;
   },
@@ -732,7 +690,7 @@ var SchedulingEngine = {
   _assignSaturdayShifts: function(context, singleShiftCounts) {
     console.log("\n=== [Weekends] 週六排班開始 ===");
 
-    const staffList = RepoStaff.getAvailableStaff('FT');
+    const staffList = context.staffList || RepoStaff.getAvailableStaff('FT');
     
     // 讀取週六設定
     if (!RulesConfig.SHIFTS || !RulesConfig.SHIFTS.SATURDAY) {
@@ -798,16 +756,14 @@ var SchedulingEngine = {
 
         // 嘗試排 A
         if (currentA < reqA && this._isStaffAvailableForShift(day, staffId, 'A')) {
-          day.slots['A'].ORTHO.staff.push(staffId);
-          day.slots['A'].ORTHO.source = "AUTO_SAT_A";
+          ScheduleAssignments.add(day, 'A', 'ORTHO', staffId, 'AUTO_SAT_A');
           currentA++;
           assignedA = true;
         }
 
         // 嘗試排 B
         if (currentB < reqB && this._isStaffAvailableForShift(day, staffId, 'B')) {
-          day.slots['B'].ORTHO.staff.push(staffId);
-          day.slots['B'].ORTHO.source = "AUTO_SAT_B";
+          ScheduleAssignments.add(day, 'B', 'ORTHO', staffId, 'AUTO_SAT_B');
           currentB++;
           assignedB = true;
         }
@@ -905,20 +861,10 @@ var SchedulingEngine = {
    * 更新：修正缺額計算邏輯 (Ortho 讀取 Config, Peds 固定為 1)
    */
   saveToScheduleOutput: function(context) {
+    ScheduleAssignments.validateMetadata(context);
     const ss = getDbSpreadsheet();
     const sheet = ss.getSheetByName(CONFIG.SHEET_NAMES.SCHEDULE_OUTPUT);
     
-    // 1. 清除舊資料
-    const lastRow = sheet.getLastRow();
-    if (lastRow >= 3) {
-      const runIdValues = sheet.getRange(3, 1, lastRow - 2, 1).getValues();
-      for (let i = runIdValues.length - 1; i >= 0; i--) {
-        if (runIdValues[i][0] === context.runIdStr) {
-          sheet.deleteRow(i + 3);
-        }
-      }
-    }
-
     // 2. 準備寫入的資料列
     const rows = [];
     const now = new Date();
@@ -978,9 +924,9 @@ var SchedulingEngine = {
             data.staff[3] || "",    // G: 員工4
             data.off.join(","),     // H: 休假名單
             currentGap,                    // ★ I: current_gap (計算出的缺額) ★
-            data.staff[0] ? data.source : "", // J: Source 1
-            data.staff[1] ? data.source : "", // K: Source 2
-            data.staff[2] ? data.source : "", // L: Source 3
+            data.staff[0] ? data.assignmentMeta[data.staff[0]].source : "", // J: Source 1
+            data.staff[1] ? data.assignmentMeta[data.staff[1]].source : "", // K: Source 2
+            data.staff[2] ? data.assignmentMeta[data.staff[2]].source : "", // L: Source 3
             station,                // M: Station (ORTHO/PEDS)
             "system",               // N: User
             now,                    // O: Timestamp
@@ -990,10 +936,27 @@ var SchedulingEngine = {
       });
     });
 
-    // 3. 批次寫入
-    if (rows.length > 0) {
-      const finalLastRow = sheet.getLastRow();
-      sheet.getRange(finalLastRow + 1, 1, rows.length, 16).setValues(rows);
+    if (rows.some(row => row.length !== 16)) throw ScheduleAssignments.error('INTERNAL_INVALID', '輸出列寬度錯誤');
+    const lastRow = sheet.getLastRow();
+    const oldRows = [];
+    const oldRowNumbers = [];
+    if (lastRow >= 3) {
+      const prior = sheet.getRange(3, 1, lastRow - 2, 16).getValues();
+      prior.forEach((row, index) => {
+        const value = row[0];
+        const id = Object.prototype.toString.call(value) === '[object Date]'
+          ? Utilities.formatDate(value, Session.getScriptTimeZone(), 'yyyy-MM') : String(value).trim();
+        if (id === context.runIdStr) { oldRows.push(row); oldRowNumbers.push(index + 3); }
+      });
+    }
+    try {
+      oldRowNumbers.slice().reverse().forEach(row => sheet.deleteRow(row));
+      if (rows.length) sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 16).setValues(rows);
+    } catch (error) {
+      throw ScheduleAssignments.error('PERSISTENCE_FAILED', '後台班表寫入失敗：' + error.message, {
+        stage: 'BACKEND_WRITE', runId: context.runIdStr, oldRows: oldRows,
+        oldRowNumbers: oldRowNumbers, attemptedRows: rows.length, partialWritePossible: true
+      });
     }
   },
 

@@ -74,28 +74,48 @@ var CoreSystem = {
    * 2. 呼叫 scheduling engine 進行排班運算
    */
   closeFtWindow: function() {
-    // 1. 取得任務 & 基本檢查
-    const activeRun = RepoCore.getActiveRun();
-    if (!activeRun) throw new Error("找不到進行中的排班任務。");
-    
-    // 如果不是 OPEN 狀態就報錯，防止重複執行
-    if (activeRun.data.status !== 'FT_WINDOW_OPEN') {
-      throw new Error(`狀態錯誤：目前狀態為 ${activeRun.data.status}，無法執行截止。`);
-    }
-
-    // 2. 更新狀態為 CLOSED (鎖定)
-    // 如果這裡資料庫寫入失敗，程式會自動報錯並停止，前端會顯示錯誤
-    RepoCore.updateToFtClosed(activeRun.rowIndex);
-    console.log(`RunID ${activeRun.data.run_id} 已關閉窗口`);
-
-    // 3. 呼叫引擎運算，並接住回傳的 context
-    const context = SchedulingEngine.generateSchedule(activeRun.data.run_id);
-
-    // 4. context.runIdStr是引擎內部已經用 Utilities.formatDate 轉好的 "2026-02" 字串
-    exportScheduleToFrontend(context.runIdStr);
-    
-    // 若執行到這裡代表全部成功
-    return "✅ 執行成功！已完成排班並更新班表。";
+    return withSchedulingScriptLock_(function() {
+      const activeRun = RepoCore.getActiveRun();
+      if (!activeRun) throw new Error("找不到進行中的排班任務。");
+      const status = activeRun.data.status;
+      if (status !== 'FT_WINDOW_OPEN' && status !== 'FT_WINDOW_CLOSED') {
+        throw new Error(`狀態錯誤：目前狀態為 ${status}，無法執行截止或重試。`);
+      }
+      const runId = normalizeSchedulingRunId_(activeRun.data.run_id);
+      // 只有首次截止寫入時間；截止失敗不能開始排班。
+      if (status === 'FT_WINDOW_OPEN') RepoCore.updateToFtClosed(activeRun.rowIndex);
+      let stage = 'SCHEDULING';
+      try {
+        const context = SchedulingEngine.generateSchedule(runId);
+        stage = 'FRONTEND_EXPORT';
+        exportScheduleToFrontend(context.runIdStr);
+        return "✅ 執行成功！已完成排班並更新班表。";
+      } catch (error) {
+        const original = schedulingErrorDetails_(error);
+        const details = Object.assign({}, error.details || {}, {
+          runId: runId,
+          stage: (error.details && error.details.stage) || stage,
+          flowStage: stage,
+          partialWritePossible: stage === 'FRONTEND_EXPORT' || error.code === 'PERSISTENCE_FAILED'
+        });
+        try {
+          // 按 runId 重新查找並核對狀態，不使用可能已變動的舊列位置。
+          RepoCore.restoreFtClosed(runId, details);
+          details.retryReady = true;
+        } catch (recoveryError) {
+          details.retryReady = false;
+          details.originalError = original;
+          details.recoveryError = schedulingErrorDetails_(recoveryError);
+          const combined = new Error(error.message + '；狀態還原失敗：' + recoveryError.message);
+          combined.code = error.code || 'PERSISTENCE_FAILED';
+          combined.details = details;
+          throw combined;
+        }
+        error.code = error.code || (stage === 'FRONTEND_EXPORT' ? 'PERSISTENCE_FAILED' : 'INTERNAL_INVALID');
+        error.details = details;
+        throw error;
+      }
+    });
   },
 
   /**
@@ -121,21 +141,35 @@ var CoreSystem = {
    * @param {string} runId - 例如 "2026-02"
    */
   publishSchedule: function(runId) {
-    // 1. 取得任務資訊
-    const activeRun = RepoCore.getActiveRun();
-    
-    // 防呆：確認目前 Active 的任務是否就是要發布的那個月份
-    // (或是您允許發布歷史月份，這行可以視需求拿掉)
-    if (activeRun && String(activeRun.data.run_id) !== String(runId)) {
-       // 這裡僅做警告，邏輯上還是依傳入的 runId 為主去查資料庫
-    }
-    // 3. 通過檢查，更新資料庫
-    RepoCore.updateToPublished(runId);
-    
-    return "SUCCESS"; // 回傳成功訊號給前台
+    return withSchedulingScriptLock_(function() {
+      RepoCore.updateToPublished(normalizeSchedulingRunId_(runId));
+      return "SUCCESS";
+    });
   },
 };
 
 function debugTest() {
   CoreSystem.startFtScheduling();
+}
+
+/** 共用提交/截止/發布互斥鎖；同一次 Library 執行期間保持鎖定。 */
+function withSchedulingScriptLock_(operation) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    return operation();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function normalizeSchedulingRunId_(runId) {
+  if (runId instanceof Date) {
+    return Utilities.formatDate(runId, Session.getScriptTimeZone(), 'yyyy-MM');
+  }
+  return runId == null ? '' : String(runId).trim();
+}
+
+function schedulingErrorDetails_(error) {
+  return { message: error.message || String(error), code: error.code || null, details: error.details || null };
 }

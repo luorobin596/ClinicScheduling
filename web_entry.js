@@ -79,23 +79,20 @@ function getInitialData() {
  * 處理提交 (完全獨立，不檢查 Email)
  */
 function processFtSubmission(payload) {
-  try {
-    // 1. 取得 RunID (若前端沒傳，嘗試從後端讀取)
-    let runId = payload.runId;
-    if (!runId) {
-       const activeRun = RepoCore.getActiveRun();
-       runId = activeRun ? activeRun.data.run_id : null;
+  return withSchedulingScriptLock_(function() {
+    const activeRun = RepoCore.getActiveRun();
+    if (!activeRun || activeRun.data.status !== 'FT_WINDOW_OPEN') {
+      throw new Error("目前非填寫時間，意願未儲存。");
     }
-    if (!runId) throw new Error("無法確認排班月份 (RunID Missing)");
-
-    // 2. 直接寫入，不進行額外驗證
-    RepoRequests.saveStaffRequest(runId, payload);
-
+    if (!payload || typeof payload !== 'object') throw new Error("提交資料格式錯誤。");
+    const currentRunId = normalizeSchedulingRunId_(activeRun.data.run_id);
+    const requestedRunId = payload.runId ? normalizeSchedulingRunId_(payload.runId) : currentRunId;
+    if (!currentRunId || requestedRunId !== currentRunId) {
+      throw new Error("提交的排班月份不是目前開放的任務，意願未儲存。");
+    }
+    RepoRequests.saveStaffRequest(currentRunId, payload);
     return { success: true };
-  } catch (e) {
-    // 錯誤會被 HTML 的 withFailureHandler 捕捉
-    throw new Error(e.message);
-  }
+  });
 }
 
 /**

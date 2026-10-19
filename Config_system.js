@@ -1,3 +1,6 @@
+// Bounded post-processing; tunable after Apps Script runtime verification.
+const SCHEDULE_SEARCH_OPTIONS = { maxCandidates: 20000, maxAccepted: 200, timeLimitMs: 10000 };
+
 /**
  * config.gs
  * 系統全域設定
@@ -169,9 +172,9 @@ var RulesConfig = {
   },
 
   // 3. 組合函式：將「時間」與「動態載入的人員」結合
-  getPedsRules: function() {
+  getPedsRules: function(settings) {
     // 改用 RulesConfig 直接指向，避免 this 抓不到的情況
-    const dynamic = RulesConfig.loadDynamicConfig();
+    const dynamic = settings || RulesConfig.loadDynamicConfig();
     const finalRules = {};
     
     // 檢查點：確保 PEDS_PATTERNS_DEF 不是 undefined

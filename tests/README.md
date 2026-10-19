@@ -1,58 +1,49 @@
-# 排班測試：人的休假模型 v3：骨科最低覆蓋
+# 排班測試與公平性評估
 
-目前入口：
+2026-10-19：來源追蹤、最低覆蓋修補、公平性調整及截止重試已完成本機實作。正式結果見 [400 次模擬報告](results/summary.md)。未更新線上 Apps Script Library。
+
+## 現行驗證入口
 
 ```sh
 node --test tests/*.test.cjs
-TZ=Asia/Taipei node tests/analyze-fairness.cjs
+TZ=Asia/Taipei node tests/evaluate-adjustments.cjs --scenario baseline
+TZ=Asia/Taipei node tests/evaluate-adjustments.cjs --scenario full-only
+TZ=Asia/Taipei node tests/evaluate-adjustments.cjs --scenario mixed
+TZ=Asia/Taipei node tests/evaluate-adjustments.cjs --scenario week-off
+node tests/summarize-adjustments.cjs
 ```
 
-只使用真實排班引擎做本機模擬；Google 讀取服務以測試資料代替，輸出函式替換為空函式，不寄信、不寫入 Google Sheets。
+測試均在 Node 執行，以假 Google 服務／假 Sheet 取代線上服務，不寄信或修改真實試算表。完整測試 109 項；模擬結果另行逐筆驗證，不以測試程式跑完表示所有排班都合格。
 
-## 休假與意願定義
+- `assignment-provenance.test.cjs`：S01～S07；逐人來源、鎖定、刪除舊表前驗證、凍結 100 組初始班表等價。
+- `coverage-repair.test.cjs`：R01～R05；硬限制、可行性、原子候選、同日／跨日／兩步修補與搜尋停止。
+- `fairness-adjustment.test.cjs`：F01／F01b／F02／F03；休假工時基準、單節分類、逐週班型、字典序及人數不變。
+- `adjustment-integration.test.cjs`：I01；最終流程與假 Sheet 寫入時序。
+- `flow-retry.test.cjs`：I02／I03；CLOSED 重試、截止時間、失敗還原、拒收舊頁、共享互斥鎖及部分 I/O 診斷。
+- `scenario-fixtures.test.cjs`：三種新增請假情境的額度與連續一週；既有輪轉、上限與休假模型測試亦保留。
 
-- 2026 年 11 月，無額外國定假日，週日固定休 5 天。
-- 每人月休 9 天：其餘 4 天 = 8 個半天額度。
-- 全天休扣 2 額度，ABC 均禁止，不指定上班。
-- 半天休扣 1 額度，指定上 A/B/C 中一班，另外兩班禁止；週六只可選 A 或 B。
-- 指定 AB/BC/AC 扣 0 額度，兩班均指定上班，剩餘一班禁止，班型照常納入公平性。
-- 同一員工一天只有一種意願，不將兩個半天休假紀錄任意拼成另一種意願。
-- 只有與本人半天休選擇相符的單節班列為自願單節班；小兒固定班及代班不因來源為固定班而被排除。
-- 不以 off 紀錄筆數推算休假天數。兩個班次不排班可能只扣半天，三個班次不排班則扣一天。
+## 現行模型與比較
 
-## 最低骨科覆蓋
+11 月無國定假日、5 個週日；通常月休 9 天，扣週日後 8 個半天額度。全天休扣 2、ABC 全禁；半天休扣 1、指定一班並禁排其餘；指定雙班扣 0 且鎖定。小兒形成的非自願單節納入，個人指定的半天單節排除。連休一週者月休 11 天，其他四人 9 天。
 
-- 小兒班不計入骨科最低人數或時段覆蓋。
-- 平日至少兩位不同骨科員工上班，且骨科 A/B/C 各至少一人。
-- 兩位員工的班型相同且漏掉某班時，需要第三人涵蓋缺少的時段；若兩個不同單節班仍不足以涵蓋三班，也判定不合格。
-- 週六至少一位不同骨科員工上班；未額外要求 AB 都有人。
-- 先用已填入固定班及小兒班的狀態篩檢可用骨科人力。這只是必要條件，不是證明已找到可行解。
-- 完成排班後獨立檢查實際最低覆蓋，所有失敗都保留，不能當作輸入衝突排除。
+最低骨科覆蓋：平日至少兩名不同員工且 ABC 各有人；週六至少一名。小兒不計骨科；仍容許未滿需求上限的兼職缺額。
 
-## 抽樣及限制
+公平性使用正式引擎共用的 `ScheduleFairness.measure`：月非自願單節 → 月工時達成率 → 每週 AC → 每週 BC／AB 同級。週日至週六分週，含週六班型與月初月底短週；不強制每週固定班型配額。工時達成率依原始休假算個人應排工時，不因排班空缺而縮小分母。
 
-每人先隨機選 0～4 天全天休，再補 8-2×全天數的半天休。這是無實際分布資料時的測試假設，不代表診所真實選填頻率。另有每人增加一次指定雙班的獨立情境，次數同樣是測試假設。
+`baseline` 完全保留先前同批 seed／events，其中 1 組真實輸入衝突不會替換；前後公平性使用同一批成功 99 組。新增三情境以原始意願與小兒固定班做當日可行性檢查，先固定 100 組再執行後處理；不以初始自動班表或修補結果篩掉樣本。前置拒絕原因及正式樣本均保存在 `results/*-inputs.json`。修補後失敗一律留在分母。
 
-FT003 負責 Pattern 1；FT002 負責 Pattern 2。隨機意願未事先協調，小兒同班休假及固定班超額會由現有引擎報錯。保留每個被拒絕的種子與訊息，再繼續產生下一組；每個情境統計前 100 組無輸入衝突的班表。完成排班的班表中發現的規則違規仍保留在 violations 或 minimumCoverageFindings，不能當作輸入衝突排除。公平性結果是有條件的模擬統計，不是所有隨機意願都能排班的保證，也不是已證明無法再改善的公平性。
+`results/*-evaluation.json` 保存初始、修補、最終、失敗、搜尋停止及版本 SHA256；`summary.md` 是比較報告。`baseline-3-*` 為先導測試；`superseded-initial-roster-screen/` 為篩選偏差修正前的先導結果，兩者不納入正式 400 組。
 
-月統計含週六；完整週比較僅計週一至五，月底短週另保留於各人的 weekly 明細，不強制符合 1 AC / 2 BC / 2 AB。小兒時數與班型算入本人工作統計。額外未排班時段不自動當作指定休假。
+## 正式模組與本機測試邊界
 
-## 結果檔
+新增 `scheduling_assignments.js`、`scheduling_fairness.js`、`scheduling_adjustments.js` 三個 GAS 全域物件，供 `scheduling_engine.js` 使用；既有前台呼叫介面與 Sheet 欄位維持。更新 TEST 專案時需一併加入三檔，並同步本次既有 JS 檔修改。`tests/`、`tasks/` 不上傳為 GAS 程式碼。
 
-目前結果為 `fairness-human-leave-coverage-2026-11.json`。
+`engine-harness.cjs` 預設只執行初始排班，供歷史回歸；`{ final: true }` 或 `generateFinalSchedule` 才執行正式完整流程。模擬入口明確呼叫相同的初始、repair、improve，並獨立核對意願、人數、鎖定及最終最低覆蓋。
 
-- 主情境產生 186 組，100 組通過輸入必要條件並完成引擎執行；其中 82 組未滿足最低骨科覆蓋，只有 18 組所有日期均達標。
-- 每人增加一次指定雙班的情境產生 225 組，100 組完成執行；其中 75 組未滿足最低骨科覆蓋，只有 25 組所有日期均達標。
-- `successful` 指引擎完成執行，不代表所有規範通過；`minimumCoveragePassedRuns` 才是本輪每日最低覆蓋全數通過的組數。
-- 兩情境均有 104 個不達標日，主要是月底短週 B 班目標為零。週六至少一人均達標，沒有偵測到超額或休假衝突。
-- 公平性表保留所有完成執行的班表，包含最低覆蓋失敗者，僅供診斷，不能作為已符合全部規則的公平性結論。
-- `fairness-human-leave-2026-11.json` 是前一版休假模型 v2 結果，尚未包含最低骨科覆蓋檢查。
+本機成功不等同線上 GAS 權限、實際 Library LockService 範圍、Spreadsheet I/O 與時間配額均已驗證。這些須在 TEST 專案確認。資料寫入並非跨 Sheet 原子交易；狀態還原不代表舊班表已自動回復。
 
+## 歷史分析入口與報告
 
-`fairness-2026-11.json`、`five-ft-*.json`、`five-ft-*.csv` 為先前模型的歷史結果，不可視為本次休假定義下的有效公平性證據。`simulate-five-ft.cjs` 與 `simulate-five-ft-random-leave.cjs` 為歷史實驗；目前的 corrected-leave 入口會轉呼叫新的公平性分析。
+`analyze-fairness.cjs` 與 `fairness-*.json` 為歷史初始排班分析，保留原統計口徑與檔案供追蹤，不是本次後處理結果。重新執行該腳本可能覆寫其歷史命名報告；現行評估請使用上方 `evaluate-adjustments.cjs`。
 
-## 平日輪轉更新
-
-目前引擎的 C/AC/A 與 B 階段共用 `_getWeeklyStaffOrder`：有效 FT 按 ID 排序，同一起點正反序各一週，再將起點後移一位。五人前五週為 12345、54321、23451、15432、34512。人數動態處理，週次仍按當月日曆週索引，每月重新起算；週六仍依單節班累計排序。
-
-`weekly-rotation.test.cjs` 驗證完整十週序列、不同人數、成對平均順位，以及兩個平日階段使用相同順序。現存公平性 JSON 是本次輪轉修改前的歷史結果；若重新執行分析，將以新輪轉覆寫 coverage 結果。順位對稱並不保證實際班型公平，且本次尚未實作每日最低覆蓋修補。
+舊報告中「引擎執行成功」不等於最低覆蓋達標；舊完整週可能只比較平日，不能與目前包含週六及短週的指標直接比較。`five-ft-*`、舊 corrected-leave 轉呼叫腳本及各歷史 CSV 亦不作本次結論證據。

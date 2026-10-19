@@ -91,16 +91,44 @@ const RepoCore = {
     const header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const now = new Date();
 
-    // 自動尋找欄位索引 (如果找不到該欄位，不會報錯，只是不寫入)
-    const setVal = (colName, val) => {
-      const idx = header.indexOf(colName);
-      if (idx !== -1) sheet.getRange(rowIndex, idx + 1).setValue(val);
+    // 必要欄位不足時不能假裝已關閉；所有檢查須在第一筆寫入前完成。
+    for (const name of ['status', 'ft_window_close_at']) {
+      if (header.indexOf(name) < 0) throw new Error('Run_Control 缺少 ' + name + ' 欄位');
+    }
+    const setVal = (name, value) => {
+      const index = header.indexOf(name);
+      if (index >= 0) sheet.getRange(rowIndex, index + 1).setValue(value);
     };
+    // 先保存截止時間，避免 status 已 CLOSED 卻尚無首次截止時間。
+    const existingClose = sheet.getRange(rowIndex, header.indexOf('ft_window_close_at') + 1).getValue();
+    if (!existingClose) setVal('ft_window_close_at', now);
+    setVal('status', 'FT_WINDOW_CLOSED');
+    setVal('updated_at', now);
+    setVal('last_action', '截止正職填寫');
+  },
 
-    setVal('status', 'FT_WINDOW_CLOSED');       // 更新狀態
-    setVal('updated_at', now);                  // 更新最後修改時間
-    setVal('ft_window_close_at', now);          // 更新關閉時間
-    setVal('last_action', '截止正職填寫');        // 更新最後動作
+  /** 狀態復原只修改指定任務，不重設首次截止或覆蓋已發布任務。 */
+  restoreFtClosed: function(runId, failureDetails) {
+    const sheet = getDbSpreadsheet().getSheetByName(CONFIG.SHEET_NAMES.RUN_CONTROL);
+    const rows = sheet.getDataRange().getValues();
+    const header = rows[0];
+    const idIndex = header.indexOf('run_id');
+    const statusIndex = header.indexOf('status');
+    if (idIndex < 0 || statusIndex < 0) throw new Error('Run_Control 缺少 run_id/status 欄位');
+    const wanted = normalizeSchedulingRunId_(runId);
+    const matches = [];
+    for (let i = 2; i < rows.length; i++) {
+      if (normalizeSchedulingRunId_(rows[i][idIndex]) === wanted) matches.push(i);
+    }
+    if (matches.length !== 1) throw new Error('狀態還原無法唯一確認 RunID: ' + wanted);
+    const index = matches[0];
+    if (rows[index][statusIndex] === 'PUBLISHED') throw new Error('已發布任務不可還原: ' + wanted);
+    sheet.getRange(index + 1, statusIndex + 1).setValue('FT_WINDOW_CLOSED');
+    const updatedIndex = header.indexOf('updated_at');
+    const actionIndex = header.indexOf('last_action');
+    if (updatedIndex >= 0) sheet.getRange(index + 1, updatedIndex + 1).setValue(new Date());
+    if (actionIndex >= 0) sheet.getRange(index + 1, actionIndex + 1).setValue('排班失敗可重試：' + failureDetails.stage);
+    console.error('排班失敗', JSON.stringify({ runId: wanted, details: failureDetails }));
   },
 
   /**
