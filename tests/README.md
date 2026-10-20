@@ -1,3 +1,24 @@
+# 最新：週六最大可行 AB 配對（2026-10-20）
+
+週六固定合法 A／B 人數後，先求原始約束下最大可行骨科 AB 人數；只在達到此數量的方案中比較原公平性。repair／improve／最終驗證依調整後人數查同一原始限制的上界，不允許為改善評分拆成更多單節。沒有鎖定自動AB人選，也沒有加入雙班移轉。
+
+```sh
+node --test tests/*.test.cjs
+TZ=Asia/Taipei node tests/evaluate-saturday-pairing.cjs --scenario baseline
+TZ=Asia/Taipei node tests/evaluate-saturday-pairing.cjs --scenario full-only
+TZ=Asia/Taipei node tests/evaluate-saturday-pairing.cjs --scenario mixed
+TZ=Asia/Taipei node tests/evaluate-saturday-pairing.cjs --scenario week-off
+node tests/summarize-saturday-pairing.cjs
+```
+
+`tests/saturday-pairing.test.cjs` 驗證最大AB、固定單班、限額仍保持最大配對及後處理保護；`tests/support/pairing-audit.cjs` 以獨立枚舉稽核各階段。新結果位於 `results/saturday-pairing/`，與 `results/saturday-allocation/` 同批比較；根目錄summary.md呈現最新結果，前版summary保存為summary-before-saturday-pairing.md。平日C／早班報表口徑維持使用者已確認定義。
+
+舊先導測試及已被使用者清理的歷史檔案不再作此輪證據，未自動還原。原四種正式100組意願與結果保留，新的測試失敗不替換樣本。尚未部署線上Library。
+
+---
+
+以下為前一版週六配置的說明及比較入口。
+
 # 週六分配與公平性測試（最新）
 
 2026-10-19 已依週六增補規格實作 `scheduling_saturday.js`，固定合法名額後比較整日方案，使用共用增量評分。公平性優先序維持月單節 → 月工時達成率 → 每週AC → 每週BC/AB，未加入後處理雙班移轉。
@@ -57,7 +78,7 @@ node tests/summarize-adjustments.cjs
 
 `baseline` 完全保留先前同批 seed／events，其中 1 組真實輸入衝突不會替換；前後公平性使用同一批成功 99 組。新增三情境以原始意願與小兒固定班做當日可行性檢查，先固定 100 組再執行後處理；不以初始自動班表或修補結果篩掉樣本。前置拒絕原因及正式樣本均保存在 `results/*-inputs.json`。修補後失敗一律留在分母。
 
-`results/*-evaluation.json` 保存初始、修補、最終、失敗、搜尋停止及版本 SHA256；`summary.md` 是比較報告。`baseline-3-*` 為先導測試；`superseded-initial-roster-screen/` 為篩選偏差修正前的先導結果，兩者不納入正式 400 組。
+`results/*-evaluation.json` 保存初始、修補、最終、失敗、搜尋停止及版本 SHA256；`summary.md` 是比較報告。先導測試及篩選偏差修正前的結果已於 2026-10-20 清除，不影響正式 400 組資料。
 
 ## 正式模組與本機測試邊界
 
@@ -67,8 +88,12 @@ node tests/summarize-adjustments.cjs
 
 本機成功不等同線上 GAS 權限、實際 Library LockService 範圍、Spreadsheet I/O 與時間配額均已驗證。這些須在 TEST 專案確認。資料寫入並非跨 Sheet 原子交易；狀態還原不代表舊班表已自動回復。
 
-## 歷史分析入口與報告
+## 清理與保留原則（2026-10-20）
 
-`analyze-fairness.cjs` 與 `fairness-*.json` 為歷史初始排班分析，保留原統計口徑與檔案供追蹤，不是本次後處理結果。重新執行該腳本可能覆寫其歷史命名報告；現行評估請使用上方 `evaluate-adjustments.cjs`。
+已刪除不供現行測試／正式比較使用的歷史 `five-ft-*` JSON／CSV、三支 `simulate-five-ft*` 模擬入口、`fairness-2026-11.json`、`fairness-human-leave-2026-11.json`、`fairness-human-leave-coverage-2026-11.json`、有篩選偏差的 `superseded-initial-roster-screen/` 與兩輪 `baseline-3-*` 先導輸出。歷史內容可由 Git 追溯；舊文件提及這些先導輸出時，僅代表當時執行紀錄。
 
-舊報告中「引擎執行成功」不等於最低覆蓋達標；舊完整週可能只比較平日，不能與目前包含週六及短週的指標直接比較。`five-ft-*`、舊 corrected-leave 轉呼叫腳本及各歷史 CSV 亦不作本次結論證據。
+保留全部 `.test.cjs`、`support/` 與 `fixtures/`。`analyze-fairness.cjs` 的 `analyze` 仍被 `leave-model.test.cjs` 引用，不能當作過期腳本刪除；直接執行時仍可產生診斷報告。
+
+保留 `fairness-paired-rotation-100-2026-11.json`、根 results/ 的四組正式 inputs／evaluation 及 saturday-allocation/ 的四組正式 inputs／evaluation。這些資料供凍結樣本、舊週六評分核對及最新報告重建使用，不能因版本較舊而刪除。診斷腳本、偏差分析與比較前摘要亦保留。
+
+往後執行評估的 `--limit` 小樣本輸出屬先導產物，確認正式 100 組結果後可清除；勿取代正式固定輸入或回歸 fixtures。

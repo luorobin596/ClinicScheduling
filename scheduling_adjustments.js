@@ -45,6 +45,17 @@ var ScheduleAdjustments = {
     Object.keys(context.constraints.peds).forEach(key => {
       if (actual[key] !== 'PEDS') throw ScheduleAssignments.error('INTERNAL_INVALID', '小兒固定或代班遺失', { key: key });
     });
+    if (context.saturdayPairingRules) context.days.forEach(day => {
+      if (!day.isOpen || day.dayOfWeek !== 6 || (options.saturdayDates && !options.saturdayDates.includes(day.date))) return;
+      const rule = context.saturdayPairingRules[day.date];
+      if (!rule) throw ScheduleAssignments.error('INTERNAL_INVALID', '缺少週六配對限制', { date: day.date });
+      const a = day.slots.A.ORTHO.staff, b = day.slots.B.ORTHO.staff;
+      const maximum = rule.maxByCounts[a.length + ':' + b.length];
+      const actual = a.filter(id => b.includes(id)).length;
+      if (maximum === undefined || actual !== maximum) throw ScheduleAssignments.error('INTERNAL_INVALID', '週六未保留最大可行 AB 配對', {
+        date: day.date, counts: { A: a.length, B: b.length }, maxAB: maximum, actualAB: actual
+      });
+    });
     if (options.requireMinimumCoverage && this.coverage(context).length) {
       throw ScheduleAssignments.error('COVERAGE_UNRESOLVED', '骨科最低覆蓋未達標', { findings: this.coverage(context) });
     }
@@ -84,7 +95,7 @@ var ScheduleAdjustments = {
         meta.origin = removed[index].origin;
       }
     });
-    this.validate(candidate, staff, options);
+    this.validate(candidate, staff, Object.assign({}, options || {}, { saturdayDates: Array.from(touched) }));
     candidate.adjustmentHistory.push({ operations: JSON.parse(JSON.stringify(operations)), beforeSources: removed.map(meta => meta ? meta.source : null), afterSources: operations.map(op => op.add ? (op.source || 'COVERAGE_REPAIR') : null) });
     return candidate;
   },

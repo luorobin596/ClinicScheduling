@@ -41,6 +41,43 @@ var SaturdayAllocator = {
     });
   },
 
+  pairCount: function(plan) {
+    return plan.A.filter(id => plan.B.includes(id)).length;
+  },
+
+  // Original fixed/off/PEDS constraints determine the table, never current auto staff.
+  pairingRule: function(context, day, staff) {
+    const config = RulesConfig.SHIFTS.SATURDAY;
+    let states = { '0:0': 0 };
+    staff.forEach(person => {
+      const peds = Object.keys(day.slots).filter(s => day.slots[s].PEDS.staff.includes(person.id));
+      const required = ['A', 'B'].filter(s => {
+        const key = ScheduleAssignments.key(day.date, s, person.id);
+        return !peds.includes(s) && (context.constraints.fixed[key] ||
+          (day.slots[s].ORTHO.staff.includes(person.id) && ScheduleAssignments.isLocked(context, day.date, s, 'ORTHO', person.id)));
+      });
+      const patterns = [];
+      for (let mask = 0; mask < 4; mask++) {
+        const shifts = ['A', 'B'].filter((_, index) => mask & (1 << index));
+        if (shifts.length + peds.length > 2 || !required.every(s => shifts.includes(s)) ||
+            shifts.some(s => peds.includes(s) || context.constraints.off[ScheduleAssignments.key(day.date, s, person.id)])) continue;
+        patterns.push({ a: Number(shifts.includes('A')), b: Number(shifts.includes('B')), ab: shifts.length === 2 ? 1 : 0 });
+      }
+      const next = {};
+      Object.keys(states).forEach(key => {
+        const counts = key.split(':').map(Number);
+        patterns.forEach(pattern => {
+          const a = counts[0] + pattern.a, b = counts[1] + pattern.b;
+          if (a > config.A.req_total || b > config.B.req_total) return;
+          const target = a + ':' + b, pairs = states[key] + pattern.ab;
+          next[target] = Math.max(next[target] === undefined ? -1 : next[target], pairs);
+        });
+      });
+      states = next;
+    });
+    return Object.freeze({ maxByCounts: Object.freeze(states) });
+  },
+
   candidate: function(context, day, plan, base, weekIndex, activeWeeks, contributions) {
     const people = base.staff.map(person => {
       const assigned = Object.keys(day.slots).filter(s => day.slots[s].PEDS.staff.includes(person.id) || (plan[s] || day.slots[s].ORTHO.staff).includes(person.id));
@@ -97,20 +134,27 @@ var SaturdayAllocator = {
     const activeWeeks = weeks.map((days, i) => days.some(day => day.isOpen) ? i : -1).filter(i => i >= 0);
     const entries = current.days.filter(day => day.dayOfWeek === 6 && day.isOpen).map(day => this.entry(current, day, staff))
       .sort((a, b) => a.supply - b.supply || a.day.date.localeCompare(b.day.date));
+    const pairingRules = {};
+    entries.forEach(entry => { pairingRules[entry.day.date] = this.pairingRule(context, entry.day, staff); });
+    current.saturdayPairingRules = Object.freeze(pairingRules);
     let base = ScheduleFairness.measure(current, staff);
     const report = { days: [], before: base, after: null, elapsedMs: 0, fullMeasurements: 1, patternsBefore: this.patterns(context, staff) };
     for (const entry of entries) {
       const day = entry.day, dayStart = now(), index = weekByDate[day.date];
       const order = SchedulingEngine._getWeeklyStaffOrder(staff, index).map(p => p.id);
+      const maxAB = pairingRules[day.date].maxByCounts[entry.targets.A + ':' + entry.targets.B];
+      if (maxAB === undefined) throw ScheduleAssignments.error('SATURDAY_TARGET_UNREACHABLE', '週六指定與目標人數無合法配對方案', { stage: 'SATURDAY_ALLOCATION', date: day.date, targets: entry.targets });
       const contributions = {};
       staff.forEach(p => { contributions[p.id] = ScheduleFairness.workContribution(current, day, p.id); });
-      let best = null, evaluated = 0, stopReason = 'COMPLETE', usedTieBreak = false;
+      let best = null, evaluated = 0, legalPlans = 0, stopReason = 'COMPLETE', usedTieBreak = false;
       search: for (const A of this.combinations(entry.choices.A, entry.targets.A - entry.locked.A.length)) {
         for (const B of this.combinations(entry.choices.B, entry.targets.B - entry.locked.B.length)) {
           if (now() >= deadline) { stopReason = 'TIME_LIMIT'; break search; }
-          if (evaluated >= options.maxCandidatesPerDay) { stopReason = 'CANDIDATE_LIMIT'; break search; }
           const plan = { A: entry.locked.A.concat(A).sort(), B: entry.locked.B.concat(B).sort() };
           if (!this.legal(current, day, plan, staff)) continue;
+          legalPlans++;
+          if (this.pairCount(plan) !== maxAB) continue;
+          if (evaluated >= options.maxCandidatesPerDay) { stopReason = 'CANDIDATE_LIMIT'; break search; }
           const measure = this.candidate(current, day, plan, base, index, activeWeeks, contributions);
           evaluated++;
           if (options.onCandidate) options.onCandidate({ date: day.date, plan: JSON.parse(JSON.stringify(plan)), score: measure.score.slice() });
@@ -130,7 +174,7 @@ var SaturdayAllocator = {
       ScheduleAdjustments.validate(current, staff, { requireMinimumCoverage: false });
       base = best.measure;
       report.days.push({ date: day.date, targets: entry.targets, actual: { A: day.slots.A.ORTHO.staff.length, B: day.slots.B.ORTHO.staff.length },
-        locked: entry.locked, plan: best.plan, evaluated: evaluated, complete: stopReason === 'COMPLETE', stopReason: stopReason,
+        locked: entry.locked, plan: best.plan, maxAB: maxAB, actualAB: this.pairCount(best.plan), minSingles: entry.targets.A + entry.targets.B - 2 * maxAB, legalPlans: legalPlans, evaluated: evaluated, complete: stopReason === 'COMPLETE', stopReason: stopReason,
         score: base.score, order: order, usedTieBreak: usedTieBreak, elapsedMs: now() - dayStart });
     }
     // Independent full recomputation catches cache drift before exposing the result.

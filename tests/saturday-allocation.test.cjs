@@ -22,15 +22,15 @@ function planScore(x,context,plan,targetDate=date){
 function combinations(values,count){if(count===0)return [[]];return values.flatMap((v,i)=>combinations(values.slice(i+1),count-1).map(t=>[v,...t]));}
 function sameScore(x,a,b){assert.equal(x.fairness.compareScores(a,b),0,`different scores: ${a} versus ${b}`);}
 
-test('SA01 five fully available employees generate exactly 100 complete A3/B2 plans',()=>{
+test('SA01 five fully available employees generate exactly 30 maximum-pair A3/B2 plans',()=>{
  const x=fixture(),seen=new Set(),before=JSON.stringify(x.context);
  assert.ok(x.allocator,'SaturdayAllocator must be loaded');
  const result=x.allocator.allocate(x.context,x.staff,{...options,onCandidate:event=>{
   assert.equal(event.date,date);assert.equal(event.plan.A.length,3);assert.equal(event.plan.B.length,2);
   seen.add(JSON.stringify({A:Array.from(event.plan.A).sort(),B:Array.from(event.plan.B).sort()}));
  }});
- assert.equal(seen.size,100);assert.equal(result.report.days.length,1);
- assert.equal(result.report.days[0].evaluated,100);assert.equal(result.report.days[0].complete,true);
+ assert.equal(seen.size,30);assert.equal(result.report.days.length,1);
+ assert.equal(result.report.days[0].evaluated,30);assert.equal(result.report.days[0].complete,true);
  assert.equal(result.report.days[0].targets.A,3);assert.equal(result.report.days[0].targets.B,2);
  assert.equal(roster(result.context).A.length,3);assert.equal(roster(result.context).B.length,2);
  assert.equal(JSON.stringify(x.context),before);
@@ -39,7 +39,7 @@ test('SA01 five fully available employees generate exactly 100 complete A3/B2 pl
 test('SA02 fixed AB is included in eligibility, retained once, and keeps original metadata',()=>{
  const x=fixture([{staff_id:'FT001',date,kind:'pair',work:['A','B']}]);
  const result=x.allocator.allocate(x.context,x.staff,options),day=result.context.days.find(d=>d.date===date);
- assert.equal(result.report.days[0].evaluated,24);
+ assert.equal(result.report.days[0].evaluated,12);
  for(const s of ['A','B']){
   assert.equal(day.slots[s].ORTHO.staff.filter(id=>id==='FT001').length,1);
   assert.deepEqual(JSON.parse(JSON.stringify(day.slots[s].ORTHO.assignmentMeta.FT001)),JSON.parse(JSON.stringify(x.context.days.find(d=>d.date===date).slots[s].ORTHO.assignmentMeta.FT001)));
@@ -70,7 +70,7 @@ test('SA03 SA05 each incremental candidate equals a full month oracle, and selec
  }
  const result=x.allocator.allocate(x.context,x.staff,{...options,onCandidate:event=>sameScore(x,Array.from(event.score),planScore(x,x.context,event.plan,event.date))});
  const ids=x.staff.map(p=>p.id).sort(),oracle=[];
- for(const A of combinations(ids,3))for(const B of combinations(ids,2))oracle.push(planScore(x,x.context,{A,B}));
+ for(const A of combinations(ids,3))for(const B of combinations(ids,2))if(A.filter(id=>B.includes(id)).length===2)oracle.push(planScore(x,x.context,{A,B}));
  oracle.sort((a,b)=>x.fairness.compareScores(a,b));
  sameScore(x,Array.from(result.report.days[0].score),oracle[0]);sameScore(x,planScore(x,x.context,roster(result.context)),oracle[0]);
 });
@@ -103,7 +103,7 @@ test('SA05 incremental scores handle zero capacity and unknown submissions exact
  x.context.submittedStaffIds=x.context.submittedStaffIds.filter(id=>id!=='FT004');
  let evaluated=0;
  const result=x.allocator.allocate(x.context,x.staff,{...options,onCandidate:event=>{evaluated++;sameScore(x,Array.from(event.score),planScore(x,x.context,event.plan,event.date));}});
- assert.equal(evaluated,24);assert.ok(!roster(result.context).A.includes('FT005'));assert.ok(!roster(result.context).B.includes('FT005'));
+ assert.equal(evaluated,12);assert.ok(!roster(result.context).A.includes('FT005'));assert.ok(!roster(result.context).B.includes('FT005'));
  const measure=x.fairness.measure(result.context,x.staff);
  assert.equal(measure.staff.find(p=>p.id==='FT005').attainment,null);
  assert.ok(measure.warnings.some(w=>w.id==='FT004'&&w.code==='CAPACITY_UNKNOWN'));
@@ -113,8 +113,8 @@ test('SA07 later-date timeout never commits an earlier Saturday result to the or
  const x=engine([],{settings:{pedsAssignments:{}}});x.e._assignSaturdayShifts=()=>{};
  const context=x.e.generateInitialSchedule('2026-11'),before=JSON.stringify(context),staff=context.staffList;
  let clock=0,events=0;
- assert.throws(()=>x.box.SaturdayAllocator.allocate(context,staff,{...options,timeLimitMs:1000,now:()=>clock,onCandidate:()=>{events++;if(events===100)clock=1000;}}),e=>e.code==='SEARCH_LIMIT'&&!!e.details);
- assert.equal(JSON.stringify(context),before);assert.equal(events,100);
+ assert.throws(()=>x.box.SaturdayAllocator.allocate(context,staff,{...options,timeLimitMs:1000,now:()=>clock,onCandidate:()=>{events++;if(events===30)clock=1000;}}),e=>e.code==='SEARCH_LIMIT'&&!!e.details);
+ assert.equal(JSON.stringify(context),before);assert.equal(events,30);
 });
 
 test('SA08 initial pipeline preserves every weekday assignment before repair',()=>{
@@ -134,7 +134,7 @@ test('SA04 single fairness remains above hours, including dispersion before atta
 });
 
 test('SA01 dynamic FT counts produce legal plan counts without a hardcoded five-person assumption',()=>{
- for(const [size,expected]of [[1,1],[3,3],[6,300]]){
+ for(const [size,expected]of [[1,1],[3,3],[6,60]]){
   const x=fixture([],Array.from({length:size},(_,i)=>`FT00${i+1}`));
   const result=x.allocator.allocate(x.context,x.staff,options),day=result.report.days[0];
   assert.equal(day.evaluated,expected);assert.equal(day.complete,true);
@@ -150,7 +150,7 @@ test('SA02 SA05 Saturday pediatric occupancy removes only that same orthopedic s
   evaluated++;assert.ok(!event.plan.A.includes('FT001'));
   sameScore(x,Array.from(event.score),planScore(x,x.context,event.plan,event.date));
  }});
- assert.equal(evaluated,40);assert.equal(result.report.days[0].targets.A,3);assert.equal(result.report.days[0].targets.B,2);
+ assert.equal(evaluated,12);assert.equal(result.report.days[0].targets.A,3);assert.equal(result.report.days[0].targets.B,2);
  assert.deepEqual(Array.from(result.context.days.find(d=>d.date===date).slots.A.PEDS.staff),['FT001']);
  assert.equal(result.context.days.find(d=>d.date===date).slots.A.PEDS.assignmentMeta.FT001.source,'PEDS_TEST');
 });

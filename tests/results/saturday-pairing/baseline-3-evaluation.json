@@ -1,8 +1,9 @@
 {
   "kind": "baseline",
   "month": "2026-11",
-  "baselineCommit": "ced9647",
-  "engineHash": "39bb17673fb61c3fbc596a266864d1b7264602844c9a0ea92b87a08251e43f82",
+  "baselineCommit": "696394b",
+  "policy": "MAX_FEASIBLE_SATURDAY_AB",
+  "engineHash": "6863155bc9ddea6167cff6d5a8c997b90f1f355231ea6a5d0b18fb0869120ecf",
   "inputHash": "ddd2d8f007216832f8c29131c7c1fa6c96f4fe2235b56742b454d86f32e2afb5",
   "sampleCount": 3,
   "inputRejected": 0,
@@ -10,14 +11,14 @@
   "failed": 0,
   "initialCoverageFailed": 3,
   "elapsedMs": {
-    "mean": 1189.3333333333333,
-    "min": 1151,
-    "max": 1239
+    "mean": 1132.6666666666667,
+    "min": 1101,
+    "max": 1185
   },
   "saturdayElapsedMs": {
-    "mean": 5.666666666666667,
-    "min": 5,
-    "max": 7
+    "mean": 3.6666666666666665,
+    "min": 3,
+    "max": 5
   },
   "legacySaturdayElapsedMs": {
     "mean": 0,
@@ -28,18 +29,18 @@
   "stages": {
     "initial": {
       "involuntarySingle": {
-        "mean": 1.3333333333333333,
+        "mean": 2,
         "min": 1,
-        "max": 2
+        "max": 3
       },
       "attainmentPercentagePoints": {
-        "mean": 7.142857142857149,
-        "min": 7.142857142857139,
-        "max": 7.142857142857153
+        "mean": 5.555555555555562,
+        "min": 4.761904761904773,
+        "max": 7.142857142857139
       },
       "rawHours": {
-        "mean": 12,
-        "min": 12,
+        "mean": 9.333333333333334,
+        "min": 8,
         "max": 12
       },
       "weeklyACWorst": {
@@ -58,25 +59,25 @@
         "max": 3
       },
       "weeklyBCABSum": {
-        "mean": 13,
-        "min": 11,
-        "max": 15
+        "mean": 13.666666666666666,
+        "min": 12,
+        "max": 16
       }
     },
     "repaired": {
       "involuntarySingle": {
-        "mean": 1.3333333333333333,
+        "mean": 2,
         "min": 1,
-        "max": 2
+        "max": 3
       },
       "attainmentPercentagePoints": {
-        "mean": 7.142857142857149,
-        "min": 7.142857142857139,
-        "max": 7.142857142857153
+        "mean": 5.555555555555562,
+        "min": 4.761904761904773,
+        "max": 7.142857142857139
       },
       "rawHours": {
-        "mean": 12,
-        "min": 12,
+        "mean": 9.333333333333334,
+        "min": 8,
         "max": 12
       },
       "weeklyACWorst": {
@@ -95,26 +96,26 @@
         "max": 3
       },
       "weeklyBCABSum": {
-        "mean": 13,
-        "min": 11,
-        "max": 14
+        "mean": 13.666666666666666,
+        "min": 12,
+        "max": 15
       }
     },
     "final": {
       "involuntarySingle": {
-        "mean": 1,
-        "min": 1,
+        "mean": 0.6666666666666666,
+        "min": 0,
         "max": 1
       },
       "attainmentPercentagePoints": {
-        "mean": 3.174603174603187,
+        "mean": 5.555555555555562,
         "min": 2.380952380952394,
-        "max": 4.761904761904773
+        "max": 9.523809523809518
       },
       "rawHours": {
-        "mean": 5.333333333333333,
+        "mean": 9.333333333333334,
         "min": 4,
-        "max": 8
+        "max": 16
       },
       "weeklyACWorst": {
         "mean": 1,
@@ -122,17 +123,17 @@
         "max": 1
       },
       "weeklyACSum": {
-        "mean": 1.6666666666666667,
+        "mean": 1.3333333333333333,
         "min": 1,
         "max": 2
       },
       "weeklyBCABWorst": {
-        "mean": 2,
+        "mean": 2.3333333333333335,
         "min": 2,
-        "max": 2
+        "max": 3
       },
       "weeklyBCABSum": {
-        "mean": 12,
+        "mean": 12.666666666666666,
         "min": 11,
         "max": 14
       }
@@ -697,7 +698,11 @@
                 "FT003"
               ]
             },
-            "evaluated": 9,
+            "maxAB": 1,
+            "actualAB": 1,
+            "minSingles": 3,
+            "legalPlans": 9,
+            "evaluated": 6,
             "complete": true,
             "stopReason": "COMPLETE",
             "score": [
@@ -720,7 +725,7 @@
               "FT001"
             ],
             "usedTieBreak": false,
-            "elapsedMs": 0
+            "elapsedMs": 1
           },
           {
             "date": "2026-11-21",
@@ -749,7 +754,11 @@
                 "FT002"
               ]
             },
-            "evaluated": 36,
+            "maxAB": 2,
+            "actualAB": 2,
+            "minSingles": 1,
+            "legalPlans": 36,
+            "evaluated": 6,
             "complete": true,
             "stopReason": "COMPLETE",
             "score": [
@@ -772,7 +781,7 @@
               "FT001"
             ],
             "usedTieBreak": false,
-            "elapsedMs": 2
+            "elapsedMs": 1
           },
           {
             "date": "2026-11-28",
@@ -794,27 +803,31 @@
               "A": [
                 "FT001",
                 "FT003",
-                "FT005"
+                "FT004"
               ],
               "B": [
                 "FT001",
                 "FT004"
               ]
             },
-            "evaluated": 36,
+            "maxAB": 2,
+            "actualAB": 2,
+            "minSingles": 1,
+            "legalPlans": 36,
+            "evaluated": 6,
             "complete": true,
             "stopReason": "COMPLETE",
             "score": [
-              1,
-              6,
-              0.07142857142857151,
-              0.019274376417236283,
+              2,
+              14,
+              0.04761904761904767,
+              0.007936507936509685,
               1,
               2,
               10,
               2,
               12,
-              90
+              88
             ],
             "order": [
               "FT001",
@@ -823,7 +836,7 @@
               "FT003",
               "FT002"
             ],
-            "usedTieBreak": true,
+            "usedTieBreak": false,
             "elapsedMs": 1
           },
           {
@@ -843,28 +856,32 @@
             "plan": {
               "A": [
                 "FT001",
-                "FT003",
-                "FT004"
+                "FT002",
+                "FT005"
               ],
               "B": [
                 "FT001",
-                "FT004"
+                "FT002"
               ]
             },
-            "evaluated": 100,
+            "maxAB": 2,
+            "actualAB": 2,
+            "minSingles": 1,
+            "legalPlans": 100,
+            "evaluated": 30,
             "complete": true,
             "stopReason": "COMPLETE",
             "score": [
               1,
-              4,
-              0.07142857142857151,
-              0.013605442176867655,
+              6,
+              0.04761904761904767,
+              0.007936507936506132,
               1,
               2,
               10,
               3,
               13,
-              106
+              114
             ],
             "order": [
               "FT001",
@@ -873,8 +890,8 @@
               "FT004",
               "FT005"
             ],
-            "usedTieBreak": true,
-            "elapsedMs": 3
+            "usedTieBreak": false,
+            "elapsedMs": 1
           }
         ],
         "before": {
@@ -1150,9 +1167,9 @@
             },
             {
               "id": "FT002",
-              "hours": 144,
+              "hours": 152,
               "capacityHours": 168,
-              "attainment": 0.8571428571428571,
+              "attainment": 0.9047619047619048,
               "voluntarySingle": 4,
               "involuntarySingle": 2,
               "leaveUnits": 8,
@@ -1161,7 +1178,7 @@
                   "week": 1,
                   "AC": 1,
                   "BC": 2,
-                  "AB": 2
+                  "AB": 3
                 },
                 {
                   "week": 2,
@@ -1192,11 +1209,11 @@
             },
             {
               "id": "FT003",
-              "hours": 152,
+              "hours": 148,
               "capacityHours": 168,
-              "attainment": 0.9047619047619048,
+              "attainment": 0.8809523809523809,
               "voluntarySingle": 4,
-              "involuntarySingle": 2,
+              "involuntarySingle": 1,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -1234,18 +1251,18 @@
             },
             {
               "id": "FT004",
-              "hours": 152,
+              "hours": 148,
               "capacityHours": 168,
-              "attainment": 0.9047619047619048,
+              "attainment": 0.8809523809523809,
               "voluntarySingle": 8,
-              "involuntarySingle": 2,
+              "involuntarySingle": 1,
               "leaveUnits": 8,
               "weekly": [
                 {
                   "week": 1,
                   "AC": 1,
                   "BC": 1,
-                  "AB": 2
+                  "AB": 1
                 },
                 {
                   "week": 2,
@@ -1263,7 +1280,7 @@
                   "week": 4,
                   "AC": 1,
                   "BC": 0,
-                  "AB": 1
+                  "AB": 2
                 },
                 {
                   "week": 5,
@@ -1319,21 +1336,177 @@
           ],
           "score": [
             1,
-            4,
-            0.07142857142857151,
-            0.013605442176867655,
+            6,
+            0.04761904761904767,
+            0.007936507936506132,
             1,
             2,
             10,
             3,
             13,
-            106
+            114
           ],
           "warnings": []
         },
-        "elapsedMs": 7,
-        "fullMeasurements": 2
+        "elapsedMs": 5,
+        "fullMeasurements": 2,
+        "patternsBefore": [
+          {
+            "id": "FT001",
+            "AB": 0,
+            "A": 0,
+            "B": 0,
+            "unassigned": 4
+          },
+          {
+            "id": "FT002",
+            "AB": 0,
+            "A": 0,
+            "B": 0,
+            "unassigned": 4
+          },
+          {
+            "id": "FT003",
+            "AB": 0,
+            "A": 1,
+            "B": 0,
+            "unassigned": 3
+          },
+          {
+            "id": "FT004",
+            "AB": 0,
+            "A": 1,
+            "B": 0,
+            "unassigned": 3
+          },
+          {
+            "id": "FT005",
+            "AB": 0,
+            "A": 2,
+            "B": 0,
+            "unassigned": 2
+          }
+        ],
+        "patternsAfter": [
+          {
+            "id": "FT001",
+            "AB": 3,
+            "A": 0,
+            "B": 0,
+            "unassigned": 1
+          },
+          {
+            "id": "FT002",
+            "AB": 3,
+            "A": 0,
+            "B": 0,
+            "unassigned": 1
+          },
+          {
+            "id": "FT003",
+            "AB": 0,
+            "A": 1,
+            "B": 1,
+            "unassigned": 2
+          },
+          {
+            "id": "FT004",
+            "AB": 1,
+            "A": 1,
+            "B": 0,
+            "unassigned": 2
+          },
+          {
+            "id": "FT005",
+            "AB": 0,
+            "A": 3,
+            "B": 0,
+            "unassigned": 1
+          }
+        ]
       },
+      "initialPairing": [
+        {
+          "date": "2026-11-07",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT002",
+              "FT005"
+            ],
+            "B": [
+              "FT001",
+              "FT002"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-14",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 1,
+          "actualAB": 1,
+          "roster": {
+            "A": [
+              "FT004",
+              "FT005",
+              "FT002"
+            ],
+            "B": [
+              "FT002",
+              "FT003"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-21",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT005",
+              "FT001",
+              "FT002"
+            ],
+            "B": [
+              "FT001",
+              "FT002"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-28",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT003",
+              "FT001",
+              "FT004"
+            ],
+            "B": [
+              "FT001",
+              "FT004"
+            ]
+          }
+        }
+      ],
       "initial": {
         "measure": {
           "staff": [
@@ -1381,9 +1554,9 @@
             },
             {
               "id": "FT002",
-              "hours": 144,
+              "hours": 152,
               "capacityHours": 168,
-              "attainment": 0.8571428571428571,
+              "attainment": 0.9047619047619048,
               "voluntarySingle": 4,
               "involuntarySingle": 2,
               "leaveUnits": 8,
@@ -1392,7 +1565,7 @@
                   "week": 1,
                   "AC": 1,
                   "BC": 2,
-                  "AB": 2
+                  "AB": 3
                 },
                 {
                   "week": 2,
@@ -1423,11 +1596,11 @@
             },
             {
               "id": "FT003",
-              "hours": 152,
+              "hours": 148,
               "capacityHours": 168,
-              "attainment": 0.9047619047619048,
+              "attainment": 0.8809523809523809,
               "voluntarySingle": 4,
-              "involuntarySingle": 2,
+              "involuntarySingle": 1,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -1465,18 +1638,18 @@
             },
             {
               "id": "FT004",
-              "hours": 152,
+              "hours": 148,
               "capacityHours": 168,
-              "attainment": 0.9047619047619048,
+              "attainment": 0.8809523809523809,
               "voluntarySingle": 8,
-              "involuntarySingle": 2,
+              "involuntarySingle": 1,
               "leaveUnits": 8,
               "weekly": [
                 {
                   "week": 1,
                   "AC": 1,
                   "BC": 1,
-                  "AB": 2
+                  "AB": 1
                 },
                 {
                   "week": 2,
@@ -1494,7 +1667,7 @@
                   "week": 4,
                   "AC": 1,
                   "BC": 0,
-                  "AB": 1
+                  "AB": 2
                 },
                 {
                   "week": 5,
@@ -1550,15 +1723,15 @@
           ],
           "score": [
             1,
-            4,
-            0.07142857142857151,
-            0.013605442176867655,
+            6,
+            0.04761904761904767,
+            0.007936507936506132,
             1,
             2,
             10,
             3,
             13,
-            106
+            114
           ],
           "warnings": []
         },
@@ -2000,6 +2173,88 @@
           }
         ]
       },
+      "repairedPairing": [
+        {
+          "date": "2026-11-07",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT002",
+              "FT005"
+            ],
+            "B": [
+              "FT001",
+              "FT002"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-14",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 1,
+          "actualAB": 1,
+          "roster": {
+            "A": [
+              "FT004",
+              "FT005",
+              "FT002"
+            ],
+            "B": [
+              "FT002",
+              "FT003"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-21",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT005",
+              "FT001",
+              "FT002"
+            ],
+            "B": [
+              "FT001",
+              "FT002"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-28",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT003",
+              "FT001",
+              "FT004"
+            ],
+            "B": [
+              "FT001",
+              "FT004"
+            ]
+          }
+        }
+      ],
       "repaired": {
         "measure": {
           "staff": [
@@ -2047,9 +2302,9 @@
             },
             {
               "id": "FT002",
-              "hours": 144,
+              "hours": 152,
               "capacityHours": 168,
-              "attainment": 0.8571428571428571,
+              "attainment": 0.9047619047619048,
               "voluntarySingle": 4,
               "involuntarySingle": 2,
               "leaveUnits": 8,
@@ -2058,7 +2313,7 @@
                   "week": 1,
                   "AC": 1,
                   "BC": 2,
-                  "AB": 2
+                  "AB": 3
                 },
                 {
                   "week": 2,
@@ -2089,11 +2344,11 @@
             },
             {
               "id": "FT003",
-              "hours": 152,
+              "hours": 148,
               "capacityHours": 168,
-              "attainment": 0.9047619047619048,
+              "attainment": 0.8809523809523809,
               "voluntarySingle": 4,
-              "involuntarySingle": 2,
+              "involuntarySingle": 1,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -2131,18 +2386,18 @@
             },
             {
               "id": "FT004",
-              "hours": 152,
+              "hours": 148,
               "capacityHours": 168,
-              "attainment": 0.9047619047619048,
+              "attainment": 0.8809523809523809,
               "voluntarySingle": 8,
-              "involuntarySingle": 2,
+              "involuntarySingle": 1,
               "leaveUnits": 8,
               "weekly": [
                 {
                   "week": 1,
                   "AC": 1,
                   "BC": 1,
-                  "AB": 2
+                  "AB": 1
                 },
                 {
                   "week": 2,
@@ -2160,7 +2415,7 @@
                   "week": 4,
                   "AC": 1,
                   "BC": 0,
-                  "AB": 1
+                  "AB": 2
                 },
                 {
                   "week": 5,
@@ -2216,15 +2471,15 @@
           ],
           "score": [
             1,
-            4,
-            0.07142857142857151,
-            0.013605442176867655,
+            6,
+            0.04761904761904767,
+            0.007936507936506132,
             1,
             2,
             10,
             3,
             14,
-            110
+            118
           ],
           "warnings": []
         },
@@ -2673,6 +2928,88 @@
           "after": []
         }
       },
+      "finalPairing": [
+        {
+          "date": "2026-11-07",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT002",
+              "FT005"
+            ],
+            "B": [
+              "FT002",
+              "FT005"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-14",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 1,
+          "actualAB": 1,
+          "roster": {
+            "A": [
+              "FT004",
+              "FT005",
+              "FT002"
+            ],
+            "B": [
+              "FT002",
+              "FT003"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-21",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT005",
+              "FT001",
+              "FT002"
+            ],
+            "B": [
+              "FT001",
+              "FT002"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-28",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT003",
+              "FT001",
+              "FT004"
+            ],
+            "B": [
+              "FT001",
+              "FT004"
+            ]
+          }
+        }
+      ],
       "final": {
         "measure": {
           "staff": [
@@ -2748,13 +3085,13 @@
                 {
                   "week": 4,
                   "AC": 1,
-                  "BC": 2,
+                  "BC": 1,
                   "AB": 1
                 },
                 {
                   "week": 5,
                   "AC": 0,
-                  "BC": 0,
+                  "BC": 1,
                   "AB": 0
                 }
               ],
@@ -2762,24 +3099,24 @@
             },
             {
               "id": "FT003",
-              "hours": 152,
+              "hours": 148,
               "capacityHours": 168,
-              "attainment": 0.9047619047619048,
+              "attainment": 0.8809523809523809,
               "voluntarySingle": 4,
-              "involuntarySingle": 2,
+              "involuntarySingle": 1,
               "leaveUnits": 8,
               "weekly": [
                 {
                   "week": 1,
                   "AC": 1,
-                  "BC": 2,
+                  "BC": 1,
                   "AB": 1
                 },
                 {
                   "week": 2,
                   "AC": 1,
                   "BC": 1,
-                  "AB": 0
+                  "AB": 1
                 },
                 {
                   "week": 3,
@@ -2808,14 +3145,14 @@
               "capacityHours": 168,
               "attainment": 0.8809523809523809,
               "voluntarySingle": 8,
-              "involuntarySingle": 3,
+              "involuntarySingle": 1,
               "leaveUnits": 8,
               "weekly": [
                 {
                   "week": 1,
                   "AC": 1,
                   "BC": 1,
-                  "AB": 1
+                  "AB": 2
                 },
                 {
                   "week": 2,
@@ -2833,12 +3170,12 @@
                   "week": 4,
                   "AC": 1,
                   "BC": 0,
-                  "AB": 1
+                  "AB": 2
                 },
                 {
                   "week": 5,
                   "AC": 0,
-                  "BC": 1,
+                  "BC": 0,
                   "AB": 0
                 }
               ],
@@ -2846,24 +3183,24 @@
             },
             {
               "id": "FT005",
-              "hours": 152,
+              "hours": 156,
               "capacityHours": 168,
-              "attainment": 0.9047619047619048,
+              "attainment": 0.9285714285714286,
               "voluntarySingle": 8,
-              "involuntarySingle": 2,
+              "involuntarySingle": 1,
               "leaveUnits": 8,
               "weekly": [
                 {
                   "week": 1,
                   "AC": 1,
                   "BC": 2,
-                  "AB": 0
+                  "AB": 1
                 },
                 {
                   "week": 2,
                   "AC": 1,
                   "BC": 0,
-                  "AB": 1
+                  "AB": 0
                 },
                 {
                   "week": 3,
@@ -2875,7 +3212,7 @@
                   "week": 4,
                   "AC": 1,
                   "BC": 2,
-                  "AB": 1
+                  "AB": 2
                 },
                 {
                   "week": 5,
@@ -2889,15 +3226,15 @@
           ],
           "score": [
             1,
-            4,
-            0.023809523809523836,
-            0.002267573696144609,
+            6,
+            0.04761904761904767,
+            0.007936507936506132,
             1,
             1,
             6,
             2,
-            14,
-            92
+            13,
+            82
           ],
           "warnings": []
         },
@@ -2995,12 +3332,12 @@
                 "openWeekdays": 5,
                 "shortWeek": false,
                 "AC": 1,
-                "cActual": 3,
+                "cActual": 4,
                 "cTarget": 3,
-                "cRate": 1,
-                "earlyActual": 2,
+                "cRate": 1.3333333333333333,
+                "earlyActual": 1,
                 "earlyTarget": 2,
-                "earlyRate": 1,
+                "earlyRate": 0.5,
                 "workingDays": 5,
                 "cAvailableDays": 5,
                 "earlyAvailableDays": 3,
@@ -3080,12 +3417,12 @@
                 "openWeekdays": 5,
                 "shortWeek": false,
                 "AC": 1,
-                "cActual": 3,
+                "cActual": 2,
                 "cTarget": 3,
-                "cRate": 1,
-                "earlyActual": 1,
+                "cRate": 0.6666666666666666,
+                "earlyActual": 2,
                 "earlyTarget": 1,
-                "earlyRate": 1,
+                "earlyRate": 2,
                 "workingDays": 4,
                 "cAvailableDays": 3,
                 "earlyAvailableDays": 3,
@@ -3331,7 +3668,7 @@
         "report": {
           "evaluated": 20000,
           "accepted": 3,
-          "elapsedMs": 1137,
+          "elapsedMs": 1058,
           "stopReason": "CANDIDATE_LIMIT",
           "before": {
             "staff": [
@@ -3379,9 +3716,9 @@
               },
               {
                 "id": "FT002",
-                "hours": 144,
+                "hours": 152,
                 "capacityHours": 168,
-                "attainment": 0.8571428571428571,
+                "attainment": 0.9047619047619048,
                 "voluntarySingle": 4,
                 "involuntarySingle": 2,
                 "leaveUnits": 8,
@@ -3390,7 +3727,7 @@
                     "week": 1,
                     "AC": 1,
                     "BC": 2,
-                    "AB": 2
+                    "AB": 3
                   },
                   {
                     "week": 2,
@@ -3421,11 +3758,11 @@
               },
               {
                 "id": "FT003",
-                "hours": 152,
+                "hours": 148,
                 "capacityHours": 168,
-                "attainment": 0.9047619047619048,
+                "attainment": 0.8809523809523809,
                 "voluntarySingle": 4,
-                "involuntarySingle": 2,
+                "involuntarySingle": 1,
                 "leaveUnits": 8,
                 "weekly": [
                   {
@@ -3463,18 +3800,18 @@
               },
               {
                 "id": "FT004",
-                "hours": 152,
+                "hours": 148,
                 "capacityHours": 168,
-                "attainment": 0.9047619047619048,
+                "attainment": 0.8809523809523809,
                 "voluntarySingle": 8,
-                "involuntarySingle": 2,
+                "involuntarySingle": 1,
                 "leaveUnits": 8,
                 "weekly": [
                   {
                     "week": 1,
                     "AC": 1,
                     "BC": 1,
-                    "AB": 2
+                    "AB": 1
                   },
                   {
                     "week": 2,
@@ -3492,7 +3829,7 @@
                     "week": 4,
                     "AC": 1,
                     "BC": 0,
-                    "AB": 1
+                    "AB": 2
                   },
                   {
                     "week": 5,
@@ -3548,15 +3885,15 @@
             ],
             "score": [
               1,
-              4,
-              0.07142857142857151,
-              0.013605442176867655,
+              6,
+              0.04761904761904767,
+              0.007936507936506132,
               1,
               2,
               10,
               3,
               14,
-              110
+              118
             ],
             "warnings": []
           },
@@ -3634,13 +3971,13 @@
                   {
                     "week": 4,
                     "AC": 1,
-                    "BC": 2,
+                    "BC": 1,
                     "AB": 1
                   },
                   {
                     "week": 5,
                     "AC": 0,
-                    "BC": 0,
+                    "BC": 1,
                     "AB": 0
                   }
                 ],
@@ -3648,24 +3985,24 @@
               },
               {
                 "id": "FT003",
-                "hours": 152,
+                "hours": 148,
                 "capacityHours": 168,
-                "attainment": 0.9047619047619048,
+                "attainment": 0.8809523809523809,
                 "voluntarySingle": 4,
-                "involuntarySingle": 2,
+                "involuntarySingle": 1,
                 "leaveUnits": 8,
                 "weekly": [
                   {
                     "week": 1,
                     "AC": 1,
-                    "BC": 2,
+                    "BC": 1,
                     "AB": 1
                   },
                   {
                     "week": 2,
                     "AC": 1,
                     "BC": 1,
-                    "AB": 0
+                    "AB": 1
                   },
                   {
                     "week": 3,
@@ -3694,14 +4031,14 @@
                 "capacityHours": 168,
                 "attainment": 0.8809523809523809,
                 "voluntarySingle": 8,
-                "involuntarySingle": 3,
+                "involuntarySingle": 1,
                 "leaveUnits": 8,
                 "weekly": [
                   {
                     "week": 1,
                     "AC": 1,
                     "BC": 1,
-                    "AB": 1
+                    "AB": 2
                   },
                   {
                     "week": 2,
@@ -3719,12 +4056,12 @@
                     "week": 4,
                     "AC": 1,
                     "BC": 0,
-                    "AB": 1
+                    "AB": 2
                   },
                   {
                     "week": 5,
                     "AC": 0,
-                    "BC": 1,
+                    "BC": 0,
                     "AB": 0
                   }
                 ],
@@ -3732,24 +4069,24 @@
               },
               {
                 "id": "FT005",
-                "hours": 152,
+                "hours": 156,
                 "capacityHours": 168,
-                "attainment": 0.9047619047619048,
+                "attainment": 0.9285714285714286,
                 "voluntarySingle": 8,
-                "involuntarySingle": 2,
+                "involuntarySingle": 1,
                 "leaveUnits": 8,
                 "weekly": [
                   {
                     "week": 1,
                     "AC": 1,
                     "BC": 2,
-                    "AB": 0
+                    "AB": 1
                   },
                   {
                     "week": 2,
                     "AC": 1,
                     "BC": 0,
-                    "AB": 1
+                    "AB": 0
                   },
                   {
                     "week": 3,
@@ -3761,7 +4098,7 @@
                     "week": 4,
                     "AC": 1,
                     "BC": 2,
-                    "AB": 1
+                    "AB": 2
                   },
                   {
                     "week": 5,
@@ -3775,24 +4112,24 @@
             ],
             "score": [
               1,
-              4,
-              0.023809523809523836,
-              0.002267573696144609,
+              6,
+              0.04761904761904767,
+              0.007936507936506132,
               1,
               1,
               6,
               2,
-              14,
-              92
+              13,
+              82
             ],
             "warnings": []
           }
         },
         "coverage": [],
-        "rosterHash": "acfba7ff9efc76237a96b5ce0443c4418799affe41ac326dfb1080d8278d2bc4"
+        "rosterHash": "5e60d9074349840820aeba4b569773673dc560966f52b613a57d745bd54ff365"
       },
       "status": "VALID",
-      "elapsedMs": 1178
+      "elapsedMs": 1101
     },
     {
       "seed": 2,
@@ -4340,6 +4677,10 @@
                 "FT003"
               ]
             },
+            "maxAB": 0,
+            "actualAB": 0,
+            "minSingles": 4,
+            "legalPlans": 1,
             "evaluated": 1,
             "complete": true,
             "stopReason": "COMPLETE",
@@ -4392,6 +4733,10 @@
                 "FT003"
               ]
             },
+            "maxAB": 0,
+            "actualAB": 0,
+            "minSingles": 4,
+            "legalPlans": 1,
             "evaluated": 1,
             "complete": true,
             "stopReason": "COMPLETE",
@@ -4444,7 +4789,11 @@
                 "FT002"
               ]
             },
-            "evaluated": 16,
+            "maxAB": 1,
+            "actualAB": 1,
+            "minSingles": 3,
+            "legalPlans": 16,
+            "evaluated": 12,
             "complete": true,
             "stopReason": "COMPLETE",
             "score": [
@@ -4467,7 +4816,7 @@
               "FT001"
             ],
             "usedTieBreak": true,
-            "elapsedMs": 2
+            "elapsedMs": 1
           },
           {
             "date": "2026-11-28",
@@ -4493,23 +4842,27 @@
               ],
               "B": [
                 "FT002",
-                "FT003"
+                "FT005"
               ]
             },
-            "evaluated": 36,
+            "maxAB": 2,
+            "actualAB": 2,
+            "minSingles": 1,
+            "legalPlans": 36,
+            "evaluated": 6,
             "complete": true,
             "stopReason": "COMPLETE",
             "score": [
-              2,
-              16,
-              0.07142857142857151,
-              0.013605442176864102,
+              3,
+              34,
+              0.04761904761904767,
+              0.00793650793650258,
               1,
               1,
               6,
               2,
-              11,
-              72
+              12,
+              82
             ],
             "order": [
               "FT001",
@@ -4518,7 +4871,7 @@
               "FT003",
               "FT002"
             ],
-            "usedTieBreak": true,
+            "usedTieBreak": false,
             "elapsedMs": 1
           }
         ],
@@ -4837,11 +5190,11 @@
             },
             {
               "id": "FT003",
-              "hours": 156,
+              "hours": 152,
               "capacityHours": 168,
-              "attainment": 0.9285714285714286,
+              "attainment": 0.9047619047619048,
               "voluntarySingle": 6,
-              "involuntarySingle": 3,
+              "involuntarySingle": 2,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -4921,11 +5274,11 @@
             },
             {
               "id": "FT005",
-              "hours": 148,
+              "hours": 152,
               "capacityHours": 168,
-              "attainment": 0.8809523809523809,
+              "attainment": 0.9047619047619048,
               "voluntarySingle": 0,
-              "involuntarySingle": 3,
+              "involuntarySingle": 2,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -4950,7 +5303,7 @@
                   "week": 4,
                   "AC": 1,
                   "BC": 2,
-                  "AB": 2
+                  "AB": 3
                 },
                 {
                   "week": 5,
@@ -4963,22 +5316,176 @@
             }
           ],
           "score": [
-            2,
-            16,
-            0.07142857142857151,
-            0.013605442176864102,
+            3,
+            34,
+            0.04761904761904767,
+            0.00793650793650258,
             1,
             1,
             6,
             2,
-            11,
-            72
+            12,
+            82
           ],
           "warnings": []
         },
-        "elapsedMs": 5,
-        "fullMeasurements": 2
+        "elapsedMs": 3,
+        "fullMeasurements": 2,
+        "patternsBefore": [
+          {
+            "id": "FT001",
+            "AB": 0,
+            "A": 1,
+            "B": 0,
+            "unassigned": 3
+          },
+          {
+            "id": "FT002",
+            "AB": 0,
+            "A": 0,
+            "B": 3,
+            "unassigned": 1
+          },
+          {
+            "id": "FT003",
+            "AB": 0,
+            "A": 0,
+            "B": 2,
+            "unassigned": 2
+          },
+          {
+            "id": "FT004",
+            "AB": 0,
+            "A": 0,
+            "B": 0,
+            "unassigned": 4
+          },
+          {
+            "id": "FT005",
+            "AB": 0,
+            "A": 0,
+            "B": 0,
+            "unassigned": 4
+          }
+        ],
+        "patternsAfter": [
+          {
+            "id": "FT001",
+            "AB": 1,
+            "A": 3,
+            "B": 0,
+            "unassigned": 0
+          },
+          {
+            "id": "FT002",
+            "AB": 1,
+            "A": 0,
+            "B": 3,
+            "unassigned": 0
+          },
+          {
+            "id": "FT003",
+            "AB": 0,
+            "A": 1,
+            "B": 2,
+            "unassigned": 1
+          },
+          {
+            "id": "FT004",
+            "AB": 0,
+            "A": 3,
+            "B": 0,
+            "unassigned": 1
+          },
+          {
+            "id": "FT005",
+            "AB": 1,
+            "A": 0,
+            "B": 0,
+            "unassigned": 3
+          }
+        ]
       },
+      "initialPairing": [
+        {
+          "date": "2026-11-07",
+          "counts": {
+            "A": 2,
+            "B": 2
+          },
+          "maxAB": 0,
+          "actualAB": 0,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT004"
+            ],
+            "B": [
+              "FT002",
+              "FT003"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-14",
+          "counts": {
+            "A": 2,
+            "B": 2
+          },
+          "maxAB": 0,
+          "actualAB": 0,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT004"
+            ],
+            "B": [
+              "FT002",
+              "FT003"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-21",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 1,
+          "actualAB": 1,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT003",
+              "FT004"
+            ],
+            "B": [
+              "FT002",
+              "FT001"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-28",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT002",
+              "FT005"
+            ],
+            "B": [
+              "FT002",
+              "FT005"
+            ]
+          }
+        }
+      ],
       "initial": {
         "measure": {
           "staff": [
@@ -5068,11 +5575,11 @@
             },
             {
               "id": "FT003",
-              "hours": 156,
+              "hours": 152,
               "capacityHours": 168,
-              "attainment": 0.9285714285714286,
+              "attainment": 0.9047619047619048,
               "voluntarySingle": 6,
-              "involuntarySingle": 3,
+              "involuntarySingle": 2,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -5152,11 +5659,11 @@
             },
             {
               "id": "FT005",
-              "hours": 148,
+              "hours": 152,
               "capacityHours": 168,
-              "attainment": 0.8809523809523809,
+              "attainment": 0.9047619047619048,
               "voluntarySingle": 0,
-              "involuntarySingle": 3,
+              "involuntarySingle": 2,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -5181,7 +5688,7 @@
                   "week": 4,
                   "AC": 1,
                   "BC": 2,
-                  "AB": 2
+                  "AB": 3
                 },
                 {
                   "week": 5,
@@ -5194,16 +5701,16 @@
             }
           ],
           "score": [
-            2,
-            16,
-            0.07142857142857151,
-            0.013605442176864102,
+            3,
+            34,
+            0.04761904761904767,
+            0.00793650793650258,
             1,
             1,
             6,
             2,
-            11,
-            72
+            12,
+            82
           ],
           "warnings": []
         },
@@ -5645,6 +6152,86 @@
           }
         ]
       },
+      "repairedPairing": [
+        {
+          "date": "2026-11-07",
+          "counts": {
+            "A": 2,
+            "B": 2
+          },
+          "maxAB": 0,
+          "actualAB": 0,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT004"
+            ],
+            "B": [
+              "FT002",
+              "FT003"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-14",
+          "counts": {
+            "A": 2,
+            "B": 2
+          },
+          "maxAB": 0,
+          "actualAB": 0,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT004"
+            ],
+            "B": [
+              "FT002",
+              "FT003"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-21",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 1,
+          "actualAB": 1,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT003",
+              "FT004"
+            ],
+            "B": [
+              "FT002",
+              "FT001"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-28",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT002",
+              "FT005"
+            ],
+            "B": [
+              "FT002",
+              "FT005"
+            ]
+          }
+        }
+      ],
       "repaired": {
         "measure": {
           "staff": [
@@ -5734,11 +6321,11 @@
             },
             {
               "id": "FT003",
-              "hours": 156,
+              "hours": 152,
               "capacityHours": 168,
-              "attainment": 0.9285714285714286,
+              "attainment": 0.9047619047619048,
               "voluntarySingle": 6,
-              "involuntarySingle": 3,
+              "involuntarySingle": 2,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -5818,11 +6405,11 @@
             },
             {
               "id": "FT005",
-              "hours": 148,
+              "hours": 152,
               "capacityHours": 168,
-              "attainment": 0.8809523809523809,
+              "attainment": 0.9047619047619048,
               "voluntarySingle": 0,
-              "involuntarySingle": 3,
+              "involuntarySingle": 2,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -5847,7 +6434,7 @@
                   "week": 4,
                   "AC": 1,
                   "BC": 2,
-                  "AB": 2
+                  "AB": 3
                 },
                 {
                   "week": 5,
@@ -5860,16 +6447,16 @@
             }
           ],
           "score": [
-            2,
-            16,
-            0.07142857142857151,
-            0.013605442176864102,
+            3,
+            34,
+            0.04761904761904767,
+            0.00793650793650258,
             1,
             1,
             6,
             2,
-            11,
-            72
+            12,
+            82
           ],
           "warnings": []
         },
@@ -6303,7 +6890,7 @@
         "report": {
           "evaluated": 32,
           "accepted": 1,
-          "elapsedMs": 15,
+          "elapsedMs": 14,
           "stopReason": "COVERAGE_SATISFIED",
           "before": [
             {
@@ -6318,6 +6905,86 @@
           "after": []
         }
       },
+      "finalPairing": [
+        {
+          "date": "2026-11-07",
+          "counts": {
+            "A": 2,
+            "B": 2
+          },
+          "maxAB": 0,
+          "actualAB": 0,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT004"
+            ],
+            "B": [
+              "FT002",
+              "FT003"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-14",
+          "counts": {
+            "A": 2,
+            "B": 2
+          },
+          "maxAB": 0,
+          "actualAB": 0,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT004"
+            ],
+            "B": [
+              "FT002",
+              "FT003"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-21",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 1,
+          "actualAB": 1,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT003",
+              "FT004"
+            ],
+            "B": [
+              "FT002",
+              "FT001"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-28",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT002",
+              "FT005"
+            ],
+            "B": [
+              "FT002",
+              "FT005"
+            ]
+          }
+        }
+      ],
       "final": {
         "measure": {
           "staff": [
@@ -6380,9 +7047,9 @@
                 },
                 {
                   "week": 2,
-                  "AC": 2,
+                  "AC": 1,
                   "BC": 1,
-                  "AB": 0
+                  "AB": 1
                 },
                 {
                   "week": 3,
@@ -6508,7 +7175,7 @@
                   "week": 2,
                   "AC": 1,
                   "BC": 2,
-                  "AB": 2
+                  "AB": 1
                 },
                 {
                   "week": 3,
@@ -6520,7 +7187,7 @@
                   "week": 4,
                   "AC": 1,
                   "BC": 2,
-                  "AB": 2
+                  "AB": 3
                 },
                 {
                   "week": 5,
@@ -6538,8 +7205,8 @@
             0.023809523809523836,
             0.0022675736961410564,
             1,
-            2,
-            10,
+            1,
+            6,
             2,
             11,
             74
@@ -6655,13 +7322,13 @@
                 "week": 2,
                 "openWeekdays": 5,
                 "shortWeek": false,
-                "AC": 2,
-                "cActual": 4,
+                "AC": 1,
+                "cActual": 3,
                 "cTarget": 3,
-                "cRate": 1.3333333333333333,
-                "earlyActual": 1,
+                "cRate": 1,
+                "earlyActual": 2,
                 "earlyTarget": 2,
-                "earlyRate": 0.5,
+                "earlyRate": 1,
                 "workingDays": 5,
                 "cAvailableDays": 4,
                 "earlyAvailableDays": 3,
@@ -6741,9 +7408,9 @@
                 "openWeekdays": 5,
                 "shortWeek": false,
                 "AC": 1,
-                "cActual": 2,
+                "cActual": 3,
                 "cTarget": 3,
-                "cRate": 0.6666666666666666,
+                "cRate": 1,
                 "earlyActual": 1,
                 "earlyTarget": 1,
                 "earlyRate": 1,
@@ -6976,7 +7643,7 @@
         "report": {
           "evaluated": 20000,
           "accepted": 2,
-          "elapsedMs": 1207,
+          "elapsedMs": 1154,
           "stopReason": "CANDIDATE_LIMIT",
           "before": {
             "staff": [
@@ -7066,11 +7733,11 @@
               },
               {
                 "id": "FT003",
-                "hours": 156,
+                "hours": 152,
                 "capacityHours": 168,
-                "attainment": 0.9285714285714286,
+                "attainment": 0.9047619047619048,
                 "voluntarySingle": 6,
-                "involuntarySingle": 3,
+                "involuntarySingle": 2,
                 "leaveUnits": 8,
                 "weekly": [
                   {
@@ -7150,11 +7817,11 @@
               },
               {
                 "id": "FT005",
-                "hours": 148,
+                "hours": 152,
                 "capacityHours": 168,
-                "attainment": 0.8809523809523809,
+                "attainment": 0.9047619047619048,
                 "voluntarySingle": 0,
-                "involuntarySingle": 3,
+                "involuntarySingle": 2,
                 "leaveUnits": 8,
                 "weekly": [
                   {
@@ -7179,7 +7846,7 @@
                     "week": 4,
                     "AC": 1,
                     "BC": 2,
-                    "AB": 2
+                    "AB": 3
                   },
                   {
                     "week": 5,
@@ -7192,16 +7859,16 @@
               }
             ],
             "score": [
-              2,
-              16,
-              0.07142857142857151,
-              0.013605442176864102,
+              3,
+              34,
+              0.04761904761904767,
+              0.00793650793650258,
               1,
               1,
               6,
               2,
-              11,
-              72
+              12,
+              82
             ],
             "warnings": []
           },
@@ -7266,9 +7933,9 @@
                   },
                   {
                     "week": 2,
-                    "AC": 2,
+                    "AC": 1,
                     "BC": 1,
-                    "AB": 0
+                    "AB": 1
                   },
                   {
                     "week": 3,
@@ -7394,7 +8061,7 @@
                     "week": 2,
                     "AC": 1,
                     "BC": 2,
-                    "AB": 2
+                    "AB": 1
                   },
                   {
                     "week": 3,
@@ -7406,7 +8073,7 @@
                     "week": 4,
                     "AC": 1,
                     "BC": 2,
-                    "AB": 2
+                    "AB": 3
                   },
                   {
                     "week": 5,
@@ -7424,8 +8091,8 @@
               0.023809523809523836,
               0.0022675736961410564,
               1,
-              2,
-              10,
+              1,
+              6,
               2,
               11,
               74
@@ -7434,10 +8101,10 @@
           }
         },
         "coverage": [],
-        "rosterHash": "520deaf4114d78660522697186a81816e5c59f41b39bb88dfaf2766e01bb8e76"
+        "rosterHash": "1ab8989ee8fd8bb10d9fa0ea2eb9f3f695ca19a97e28cec03c9780c461b32b34"
       },
       "status": "VALID",
-      "elapsedMs": 1239
+      "elapsedMs": 1185
     },
     {
       "seed": 3,
@@ -7950,6 +8617,10 @@
                 "FT005"
               ]
             },
+            "maxAB": 2,
+            "actualAB": 2,
+            "minSingles": 1,
+            "legalPlans": 3,
             "evaluated": 3,
             "complete": true,
             "stopReason": "COMPLETE",
@@ -7973,7 +8644,7 @@
               "FT002"
             ],
             "usedTieBreak": true,
-            "elapsedMs": 0
+            "elapsedMs": 1
           },
           {
             "date": "2026-11-07",
@@ -8002,7 +8673,11 @@
                 "FT005"
               ]
             },
-            "evaluated": 16,
+            "maxAB": 1,
+            "actualAB": 1,
+            "minSingles": 3,
+            "legalPlans": 16,
+            "evaluated": 12,
             "complete": true,
             "stopReason": "COMPLETE",
             "score": [
@@ -8025,7 +8700,7 @@
               "FT005"
             ],
             "usedTieBreak": false,
-            "elapsedMs": 1
+            "elapsedMs": 0
           },
           {
             "date": "2026-11-14",
@@ -8046,7 +8721,7 @@
             "plan": {
               "A": [
                 "FT001",
-                "FT004",
+                "FT002",
                 "FT005"
               ],
               "B": [
@@ -8054,20 +8729,24 @@
                 "FT002"
               ]
             },
-            "evaluated": 36,
+            "maxAB": 2,
+            "actualAB": 2,
+            "minSingles": 1,
+            "legalPlans": 36,
+            "evaluated": 6,
             "complete": true,
             "stopReason": "COMPLETE",
             "score": [
-              1,
-              6,
-              0.11904761904761896,
-              0.041950113378682374,
+              2,
+              10,
+              0.09523809523809523,
+              0.030612244897952223,
               1,
               1,
               6,
               3,
-              14,
-              104
+              15,
+              114
             ],
             "order": [
               "FT005",
@@ -8076,7 +8755,7 @@
               "FT002",
               "FT001"
             ],
-            "usedTieBreak": true,
+            "usedTieBreak": false,
             "elapsedMs": 1
           },
           {
@@ -8103,23 +8782,27 @@
               ],
               "B": [
                 "FT002",
-                "FT004"
+                "FT003"
               ]
             },
-            "evaluated": 36,
+            "maxAB": 2,
+            "actualAB": 2,
+            "minSingles": 1,
+            "legalPlans": 36,
+            "evaluated": 6,
             "complete": true,
             "stopReason": "COMPLETE",
             "score": [
-              1,
-              4,
+              2,
+              10,
               0.0714285714285714,
-              0.022675736961449644,
+              0.01700680272108812,
               1,
               1,
               6,
               3,
-              15,
-              114
+              16,
+              132
             ],
             "order": [
               "FT002",
@@ -8128,8 +8811,8 @@
               "FT005",
               "FT001"
             ],
-            "usedTieBreak": true,
-            "elapsedMs": 1
+            "usedTieBreak": false,
+            "elapsedMs": 0
           }
         ],
         "before": {
@@ -8405,11 +9088,11 @@
             },
             {
               "id": "FT002",
-              "hours": 148,
+              "hours": 152,
               "capacityHours": 168,
-              "attainment": 0.8809523809523809,
+              "attainment": 0.9047619047619048,
               "voluntarySingle": 4,
-              "involuntarySingle": 3,
+              "involuntarySingle": 2,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -8422,7 +9105,7 @@
                   "week": 2,
                   "AC": 1,
                   "BC": 1,
-                  "AB": 2
+                  "AB": 3
                 },
                 {
                   "week": 3,
@@ -8447,11 +9130,11 @@
             },
             {
               "id": "FT003",
-              "hours": 148,
+              "hours": 152,
               "capacityHours": 168,
-              "attainment": 0.8809523809523809,
+              "attainment": 0.9047619047619048,
               "voluntarySingle": 2,
-              "involuntarySingle": 3,
+              "involuntarySingle": 2,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -8470,7 +9153,7 @@
                   "week": 3,
                   "AC": 1,
                   "BC": 2,
-                  "AB": 2
+                  "AB": 3
                 },
                 {
                   "week": 4,
@@ -8489,11 +9172,11 @@
             },
             {
               "id": "FT004",
-              "hours": 156,
+              "hours": 148,
               "capacityHours": 168,
-              "attainment": 0.9285714285714286,
+              "attainment": 0.8809523809523809,
               "voluntarySingle": 8,
-              "involuntarySingle": 3,
+              "involuntarySingle": 1,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -8573,22 +9256,178 @@
             }
           ],
           "score": [
-            1,
-            4,
+            2,
+            10,
             0.0714285714285714,
-            0.022675736961449644,
+            0.01700680272108812,
             1,
             1,
             6,
             3,
-            15,
-            114
+            16,
+            132
           ],
           "warnings": []
         },
-        "elapsedMs": 5,
-        "fullMeasurements": 2
+        "elapsedMs": 3,
+        "fullMeasurements": 2,
+        "patternsBefore": [
+          {
+            "id": "FT001",
+            "AB": 0,
+            "A": 0,
+            "B": 0,
+            "unassigned": 4
+          },
+          {
+            "id": "FT002",
+            "AB": 0,
+            "A": 0,
+            "B": 0,
+            "unassigned": 4
+          },
+          {
+            "id": "FT003",
+            "AB": 0,
+            "A": 0,
+            "B": 0,
+            "unassigned": 4
+          },
+          {
+            "id": "FT004",
+            "AB": 0,
+            "A": 0,
+            "B": 0,
+            "unassigned": 4
+          },
+          {
+            "id": "FT005",
+            "AB": 0,
+            "A": 2,
+            "B": 1,
+            "unassigned": 1
+          }
+        ],
+        "patternsAfter": [
+          {
+            "id": "FT001",
+            "AB": 2,
+            "A": 0,
+            "B": 0,
+            "unassigned": 2
+          },
+          {
+            "id": "FT002",
+            "AB": 2,
+            "A": 0,
+            "B": 0,
+            "unassigned": 2
+          },
+          {
+            "id": "FT003",
+            "AB": 1,
+            "A": 2,
+            "B": 0,
+            "unassigned": 1
+          },
+          {
+            "id": "FT004",
+            "AB": 1,
+            "A": 1,
+            "B": 0,
+            "unassigned": 2
+          },
+          {
+            "id": "FT005",
+            "AB": 1,
+            "A": 2,
+            "B": 1,
+            "unassigned": 0
+          }
+        ]
       },
+      "initialPairing": [
+        {
+          "date": "2026-11-07",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 1,
+          "actualAB": 1,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT003",
+              "FT004"
+            ],
+            "B": [
+              "FT005",
+              "FT001"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-14",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT005",
+              "FT001",
+              "FT002"
+            ],
+            "B": [
+              "FT001",
+              "FT002"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-21",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT005",
+              "FT002",
+              "FT003"
+            ],
+            "B": [
+              "FT002",
+              "FT003"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-28",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT003",
+              "FT004",
+              "FT005"
+            ],
+            "B": [
+              "FT004",
+              "FT005"
+            ]
+          }
+        }
+      ],
       "initial": {
         "measure": {
           "staff": [
@@ -8636,11 +9475,11 @@
             },
             {
               "id": "FT002",
-              "hours": 148,
+              "hours": 152,
               "capacityHours": 168,
-              "attainment": 0.8809523809523809,
+              "attainment": 0.9047619047619048,
               "voluntarySingle": 4,
-              "involuntarySingle": 3,
+              "involuntarySingle": 2,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -8653,7 +9492,7 @@
                   "week": 2,
                   "AC": 1,
                   "BC": 1,
-                  "AB": 2
+                  "AB": 3
                 },
                 {
                   "week": 3,
@@ -8678,11 +9517,11 @@
             },
             {
               "id": "FT003",
-              "hours": 148,
+              "hours": 152,
               "capacityHours": 168,
-              "attainment": 0.8809523809523809,
+              "attainment": 0.9047619047619048,
               "voluntarySingle": 2,
-              "involuntarySingle": 3,
+              "involuntarySingle": 2,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -8701,7 +9540,7 @@
                   "week": 3,
                   "AC": 1,
                   "BC": 2,
-                  "AB": 2
+                  "AB": 3
                 },
                 {
                   "week": 4,
@@ -8720,11 +9559,11 @@
             },
             {
               "id": "FT004",
-              "hours": 156,
+              "hours": 148,
               "capacityHours": 168,
-              "attainment": 0.9285714285714286,
+              "attainment": 0.8809523809523809,
               "voluntarySingle": 8,
-              "involuntarySingle": 3,
+              "involuntarySingle": 1,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -8804,16 +9643,16 @@
             }
           ],
           "score": [
-            1,
-            4,
+            2,
+            10,
             0.0714285714285714,
-            0.022675736961449644,
+            0.01700680272108812,
             1,
             1,
             6,
             3,
-            15,
-            114
+            16,
+            132
           ],
           "warnings": []
         },
@@ -9255,6 +10094,88 @@
           }
         ]
       },
+      "repairedPairing": [
+        {
+          "date": "2026-11-07",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 1,
+          "actualAB": 1,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT003",
+              "FT004"
+            ],
+            "B": [
+              "FT005",
+              "FT001"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-14",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT005",
+              "FT001",
+              "FT002"
+            ],
+            "B": [
+              "FT001",
+              "FT002"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-21",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT005",
+              "FT002",
+              "FT003"
+            ],
+            "B": [
+              "FT002",
+              "FT003"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-28",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT003",
+              "FT004",
+              "FT005"
+            ],
+            "B": [
+              "FT004",
+              "FT005"
+            ]
+          }
+        }
+      ],
       "repaired": {
         "measure": {
           "staff": [
@@ -9302,11 +10223,11 @@
             },
             {
               "id": "FT002",
-              "hours": 148,
+              "hours": 152,
               "capacityHours": 168,
-              "attainment": 0.8809523809523809,
+              "attainment": 0.9047619047619048,
               "voluntarySingle": 4,
-              "involuntarySingle": 3,
+              "involuntarySingle": 2,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -9319,7 +10240,7 @@
                   "week": 2,
                   "AC": 1,
                   "BC": 1,
-                  "AB": 2
+                  "AB": 3
                 },
                 {
                   "week": 3,
@@ -9344,11 +10265,11 @@
             },
             {
               "id": "FT003",
-              "hours": 148,
+              "hours": 152,
               "capacityHours": 168,
-              "attainment": 0.8809523809523809,
+              "attainment": 0.9047619047619048,
               "voluntarySingle": 2,
-              "involuntarySingle": 3,
+              "involuntarySingle": 2,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -9367,7 +10288,7 @@
                   "week": 3,
                   "AC": 1,
                   "BC": 2,
-                  "AB": 2
+                  "AB": 3
                 },
                 {
                   "week": 4,
@@ -9386,11 +10307,11 @@
             },
             {
               "id": "FT004",
-              "hours": 156,
+              "hours": 148,
               "capacityHours": 168,
-              "attainment": 0.9285714285714286,
+              "attainment": 0.8809523809523809,
               "voluntarySingle": 8,
-              "involuntarySingle": 3,
+              "involuntarySingle": 1,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -9470,16 +10391,16 @@
             }
           ],
           "score": [
-            1,
-            4,
+            2,
+            10,
             0.0714285714285714,
-            0.022675736961449644,
+            0.01700680272108812,
             1,
             2,
             10,
             3,
-            14,
-            104
+            15,
+            120
           ],
           "warnings": []
         },
@@ -9928,16 +10849,98 @@
           "after": []
         }
       },
+      "finalPairing": [
+        {
+          "date": "2026-11-07",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 1,
+          "actualAB": 1,
+          "roster": {
+            "A": [
+              "FT001",
+              "FT003",
+              "FT004"
+            ],
+            "B": [
+              "FT005",
+              "FT003"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-14",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT005",
+              "FT001",
+              "FT002"
+            ],
+            "B": [
+              "FT001",
+              "FT002"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-21",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT005",
+              "FT002",
+              "FT003"
+            ],
+            "B": [
+              "FT002",
+              "FT003"
+            ]
+          }
+        },
+        {
+          "date": "2026-11-28",
+          "counts": {
+            "A": 3,
+            "B": 2
+          },
+          "maxAB": 2,
+          "actualAB": 2,
+          "roster": {
+            "A": [
+              "FT003",
+              "FT004",
+              "FT005"
+            ],
+            "B": [
+              "FT004",
+              "FT005"
+            ]
+          }
+        }
+      ],
       "final": {
         "measure": {
           "staff": [
             {
               "id": "FT001",
-              "hours": 148,
+              "hours": 152,
               "capacityHours": 168,
-              "attainment": 0.8809523809523809,
+              "attainment": 0.9047619047619048,
               "voluntarySingle": 0,
-              "involuntarySingle": 3,
+              "involuntarySingle": 2,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -9955,7 +10958,7 @@
                 {
                   "week": 3,
                   "AC": 1,
-                  "BC": 1,
+                  "BC": 2,
                   "AB": 1
                 },
                 {
@@ -9975,11 +10978,11 @@
             },
             {
               "id": "FT002",
-              "hours": 148,
+              "hours": 152,
               "capacityHours": 168,
-              "attainment": 0.8809523809523809,
+              "attainment": 0.9047619047619048,
               "voluntarySingle": 4,
-              "involuntarySingle": 3,
+              "involuntarySingle": 2,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -9992,7 +10995,7 @@
                   "week": 2,
                   "AC": 1,
                   "BC": 1,
-                  "AB": 2
+                  "AB": 3
                 },
                 {
                   "week": 3,
@@ -10027,7 +11030,7 @@
                 {
                   "week": 1,
                   "AC": 1,
-                  "BC": 1,
+                  "BC": 2,
                   "AB": 1
                 },
                 {
@@ -10046,7 +11049,7 @@
                   "week": 4,
                   "AC": 1,
                   "BC": 1,
-                  "AB": 2
+                  "AB": 1
                 },
                 {
                   "week": 5,
@@ -10059,11 +11062,11 @@
             },
             {
               "id": "FT004",
-              "hours": 156,
+              "hours": 144,
               "capacityHours": 168,
-              "attainment": 0.9285714285714286,
+              "attainment": 0.8571428571428571,
               "voluntarySingle": 8,
-              "involuntarySingle": 3,
+              "involuntarySingle": 2,
               "leaveUnits": 8,
               "weekly": [
                 {
@@ -10082,7 +11085,7 @@
                   "week": 3,
                   "AC": 1,
                   "BC": 1,
-                  "AB": 1
+                  "AB": 0
                 },
                 {
                   "week": 4,
@@ -10101,17 +11104,17 @@
             },
             {
               "id": "FT005",
-              "hours": 156,
+              "hours": 160,
               "capacityHours": 168,
-              "attainment": 0.9285714285714286,
+              "attainment": 0.9523809523809523,
               "voluntarySingle": 6,
-              "involuntarySingle": 3,
+              "involuntarySingle": 2,
               "leaveUnits": 8,
               "weekly": [
                 {
                   "week": 1,
                   "AC": 1,
-                  "BC": 2,
+                  "BC": 1,
                   "AB": 1
                 },
                 {
@@ -10123,14 +11126,14 @@
                 {
                   "week": 3,
                   "AC": 1,
-                  "BC": 1,
+                  "BC": 2,
                   "AB": 2
                 },
                 {
                   "week": 4,
                   "AC": 1,
                   "BC": 1,
-                  "AB": 2
+                  "AB": 3
                 },
                 {
                   "week": 5,
@@ -10143,16 +11146,16 @@
             }
           ],
           "score": [
-            1,
-            4,
-            0.04761904761904767,
-            0.011337868480726598,
+            0,
+            0,
+            0.09523809523809523,
+            0.022675736961449644,
             1,
             2,
             10,
-            2,
-            11,
-            72
+            3,
+            14,
+            100
           ],
           "warnings": []
         },
@@ -10585,8 +11588,8 @@
         ],
         "report": {
           "evaluated": 20000,
-          "accepted": 3,
-          "elapsedMs": 1127,
+          "accepted": 2,
+          "elapsedMs": 1087,
           "stopReason": "CANDIDATE_LIMIT",
           "before": {
             "staff": [
@@ -10634,11 +11637,11 @@
               },
               {
                 "id": "FT002",
-                "hours": 148,
+                "hours": 152,
                 "capacityHours": 168,
-                "attainment": 0.8809523809523809,
+                "attainment": 0.9047619047619048,
                 "voluntarySingle": 4,
-                "involuntarySingle": 3,
+                "involuntarySingle": 2,
                 "leaveUnits": 8,
                 "weekly": [
                   {
@@ -10651,7 +11654,7 @@
                     "week": 2,
                     "AC": 1,
                     "BC": 1,
-                    "AB": 2
+                    "AB": 3
                   },
                   {
                     "week": 3,
@@ -10676,11 +11679,11 @@
               },
               {
                 "id": "FT003",
-                "hours": 148,
+                "hours": 152,
                 "capacityHours": 168,
-                "attainment": 0.8809523809523809,
+                "attainment": 0.9047619047619048,
                 "voluntarySingle": 2,
-                "involuntarySingle": 3,
+                "involuntarySingle": 2,
                 "leaveUnits": 8,
                 "weekly": [
                   {
@@ -10699,7 +11702,7 @@
                     "week": 3,
                     "AC": 1,
                     "BC": 2,
-                    "AB": 2
+                    "AB": 3
                   },
                   {
                     "week": 4,
@@ -10718,11 +11721,11 @@
               },
               {
                 "id": "FT004",
-                "hours": 156,
+                "hours": 148,
                 "capacityHours": 168,
-                "attainment": 0.9285714285714286,
+                "attainment": 0.8809523809523809,
                 "voluntarySingle": 8,
-                "involuntarySingle": 3,
+                "involuntarySingle": 1,
                 "leaveUnits": 8,
                 "weekly": [
                   {
@@ -10802,16 +11805,16 @@
               }
             ],
             "score": [
-              1,
-              4,
+              2,
+              10,
               0.0714285714285714,
-              0.022675736961449644,
+              0.01700680272108812,
               1,
               2,
               10,
               3,
-              14,
-              104
+              15,
+              120
             ],
             "warnings": []
           },
@@ -10819,11 +11822,11 @@
             "staff": [
               {
                 "id": "FT001",
-                "hours": 148,
+                "hours": 152,
                 "capacityHours": 168,
-                "attainment": 0.8809523809523809,
+                "attainment": 0.9047619047619048,
                 "voluntarySingle": 0,
-                "involuntarySingle": 3,
+                "involuntarySingle": 2,
                 "leaveUnits": 8,
                 "weekly": [
                   {
@@ -10841,7 +11844,7 @@
                   {
                     "week": 3,
                     "AC": 1,
-                    "BC": 1,
+                    "BC": 2,
                     "AB": 1
                   },
                   {
@@ -10861,11 +11864,11 @@
               },
               {
                 "id": "FT002",
-                "hours": 148,
+                "hours": 152,
                 "capacityHours": 168,
-                "attainment": 0.8809523809523809,
+                "attainment": 0.9047619047619048,
                 "voluntarySingle": 4,
-                "involuntarySingle": 3,
+                "involuntarySingle": 2,
                 "leaveUnits": 8,
                 "weekly": [
                   {
@@ -10878,7 +11881,7 @@
                     "week": 2,
                     "AC": 1,
                     "BC": 1,
-                    "AB": 2
+                    "AB": 3
                   },
                   {
                     "week": 3,
@@ -10913,7 +11916,7 @@
                   {
                     "week": 1,
                     "AC": 1,
-                    "BC": 1,
+                    "BC": 2,
                     "AB": 1
                   },
                   {
@@ -10932,7 +11935,7 @@
                     "week": 4,
                     "AC": 1,
                     "BC": 1,
-                    "AB": 2
+                    "AB": 1
                   },
                   {
                     "week": 5,
@@ -10945,11 +11948,11 @@
               },
               {
                 "id": "FT004",
-                "hours": 156,
+                "hours": 144,
                 "capacityHours": 168,
-                "attainment": 0.9285714285714286,
+                "attainment": 0.8571428571428571,
                 "voluntarySingle": 8,
-                "involuntarySingle": 3,
+                "involuntarySingle": 2,
                 "leaveUnits": 8,
                 "weekly": [
                   {
@@ -10968,7 +11971,7 @@
                     "week": 3,
                     "AC": 1,
                     "BC": 1,
-                    "AB": 1
+                    "AB": 0
                   },
                   {
                     "week": 4,
@@ -10987,17 +11990,17 @@
               },
               {
                 "id": "FT005",
-                "hours": 156,
+                "hours": 160,
                 "capacityHours": 168,
-                "attainment": 0.9285714285714286,
+                "attainment": 0.9523809523809523,
                 "voluntarySingle": 6,
-                "involuntarySingle": 3,
+                "involuntarySingle": 2,
                 "leaveUnits": 8,
                 "weekly": [
                   {
                     "week": 1,
                     "AC": 1,
-                    "BC": 2,
+                    "BC": 1,
                     "AB": 1
                   },
                   {
@@ -11009,14 +12012,14 @@
                   {
                     "week": 3,
                     "AC": 1,
-                    "BC": 1,
+                    "BC": 2,
                     "AB": 2
                   },
                   {
                     "week": 4,
                     "AC": 1,
                     "BC": 1,
-                    "AB": 2
+                    "AB": 3
                   },
                   {
                     "week": 5,
@@ -11029,25 +12032,25 @@
               }
             ],
             "score": [
-              1,
-              4,
-              0.04761904761904767,
-              0.011337868480726598,
+              0,
+              0,
+              0.09523809523809523,
+              0.022675736961449644,
               1,
               2,
               10,
-              2,
-              11,
-              72
+              3,
+              14,
+              100
             ],
             "warnings": []
           }
         },
         "coverage": [],
-        "rosterHash": "c48c7d615253cb4ca8c8e3d561419be0206dcadf0c73e1cab046a7fcc49a3dcc"
+        "rosterHash": "c0e11b401fa402577c6e150aa835f0cad9389acfd64143593871797b6a780214"
       },
       "status": "VALID",
-      "elapsedMs": 1151
+      "elapsedMs": 1112
     }
   ]
 }
