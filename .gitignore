@@ -1,0 +1,19 @@
+# macOS metadata
+.DS_Store
+
+# Local environment settings (allow sanitized examples)
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Private keys and credential bundles
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+credentials.json
+service-account*.json
+service_account*.json
