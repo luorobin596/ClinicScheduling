@@ -38,19 +38,11 @@ var ScheduleFairness = {
           }
           result.leaveUnits += units;
           result.capacityHours += (2 - units) * 4;
-          const assigned = shifts.filter(s => {
-            const stations = Object.values(day.slots[s]);
-            const occurrences = stations.filter(slot => slot.staff.includes(person.id)).length;
-            if (occurrences > 1) throw ScheduleAssignments.error('INTERNAL_INVALID', '同時段跨科重複', { date: day.date, id: person.id, shift: s });
-            return occurrences === 1;
-          }).sort();
-          result.hours += assigned.length * 4;
-          const pattern = assigned.join('');
-          if (['AC', 'BC', 'AB'].includes(pattern)) weekly[pattern]++;
-          if (assigned.length === 1) {
-            const voluntary = fixed.length === 1 && fixed[0] === assigned[0] && off.length === shifts.length - 1;
-            result[voluntary ? 'voluntarySingle' : 'involuntarySingle']++;
-          }
+          const work = this.workContribution(context, day, person.id);
+          result.hours += work.hours;
+          if (['AC', 'BC', 'AB'].includes(work.pattern)) weekly[work.pattern]++;
+          result.voluntarySingle += work.voluntarySingle;
+          result.involuntarySingle += work.involuntarySingle;
         });
         result.weekly.push(weekly);
       });
@@ -61,22 +53,39 @@ var ScheduleFairness = {
       if (!result.capacityKnown) result.capacityHours = null;
       return result;
     });
+    return { staff: people, score: this.scoreStaff(people, weeks.map((days, i) => days.some(d => d.isOpen) ? i : -1).filter(i => i >= 0)),
+      warnings: people.filter(p => !p.capacityKnown).map(p => ({ id: p.id, code: 'CAPACITY_UNKNOWN' })) };
+  },
+
+  workContribution: function(context, day, id, assigned) {
+    const shifts = Object.keys(day.slots);
+    if (!assigned) assigned = shifts.filter(shift => {
+      const count = Object.values(day.slots[shift]).filter(slot => slot.staff.includes(id)).length;
+      if (count > 1) throw ScheduleAssignments.error('INTERNAL_INVALID', '同時段跨科重複', { date: day.date, id: id, shift: shift });
+      return count === 1;
+    });
+    const fixed = shifts.filter(s => context.constraints.fixed[ScheduleAssignments.key(day.date, s, id)]);
+    const off = shifts.filter(s => context.constraints.off[ScheduleAssignments.key(day.date, s, id)]);
+    const voluntary = assigned.length === 1 && fixed.length === 1 && fixed[0] === assigned[0] && off.length === shifts.length - 1;
+    return { hours: assigned.length * 4, pattern: assigned.slice().sort().join(''),
+      voluntarySingle: voluntary ? 1 : 0, involuntarySingle: assigned.length === 1 && !voluntary ? 1 : 0 };
+  },
+
+  // The same aggregation is used by full-month measurement and Saturday deltas.
+  scoreStaff: function(people, activeWeeks) {
     const singles = this.dispersion(people.map(p => p.involuntarySingle));
     const hours = this.dispersion(people.filter(p => p.attainment !== null).map(p => p.attainment));
     const ac = [], bc = [], ab = [];
-    weeks.forEach((days, index) => {
-      if (!days.some(d => d.isOpen)) return;
+    activeWeeks.forEach(index => {
       ac.push(this.dispersion(people.map(p => p.weekly[index].AC)));
       bc.push(this.dispersion(people.map(p => p.weekly[index].BC)));
       ab.push(this.dispersion(people.map(p => p.weekly[index].AB)));
     });
     const total = (list, index) => list.reduce((sum, value) => sum + value[index], 0);
-    const score = singles.concat(hours, [
+    return singles.concat(hours, [
       Math.max(0, ...ac.map(v => v[0])), total(ac, 0), total(ac, 1),
       Math.max(0, ...bc.map(v => v[0]), ...ab.map(v => v[0])),
       total(bc, 0) + total(ab, 0), total(bc, 1) + total(ab, 1)
     ]);
-    return { staff: people, score: score,
-      warnings: people.filter(p => !p.capacityKnown).map(p => ({ id: p.id, code: 'CAPACITY_UNKNOWN' })) };
   }
 };

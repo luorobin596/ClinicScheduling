@@ -1,3 +1,6 @@
+// First Saturday allocation has a separate, injectable search budget.
+const SATURDAY_ALLOCATION_OPTIONS = { maxCandidatesPerDay: 20000, timeLimitMs: 2000 };
+
 // Bounded post-processing; tunable after Apps Script runtime verification.
 const SCHEDULE_SEARCH_OPTIONS = { maxCandidates: 20000, maxAccepted: 200, timeLimitMs: 10000 };
 

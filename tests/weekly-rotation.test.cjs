@@ -29,5 +29,6 @@ test('both weekday stages use identical paired rotation including the short fina
  e._getWeeklyStaffOrder=function(list,w){const order=original.call(this,list,w);calls.push({week:w,order:ids(order)});return order;};
  e.generateSchedule('2026-11');
  const expected=['12345','54321','23451','15432','34512'].map((order,week)=>({week,order}));
- assert.deepEqual(calls,[...expected,...expected]);
+ assert.deepEqual(calls.slice(0,10),[...expected,...expected]);
+ assert.deepEqual(calls.slice(10),expected.slice(0,4));
 });

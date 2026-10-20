@@ -496,7 +496,7 @@ test('S06 fourth-person metadata is kept in memory without moving station column
 test('S07 source-only refactor preserves the 100 frozen initial rosters including existing coverage gaps',()=>{
  assert.equal(BASELINE.length,100);
  for(const [seed,expected]of BASELINE){
-  const {e,assignments}=engine(generateLeaveFixture(seed).requests);assert.equal(typeof e.generateInitialSchedule,'function');
+  const {e,assignments}=engine(generateLeaveFixture(seed).requests, { saturdayVersion: 'checkpoint' });assert.equal(typeof e.generateInitialSchedule,'function');
   const c=e.generateInitialSchedule('2026-11');
   const facts=c.days.map(d=>({date:d.date,slots:Object.fromEntries(Object.entries(d.slots).map(([s,st])=>[s,Object.fromEntries(Object.entries(st).map(([station,x])=>[station,x.staff]))]))}));
   assert.equal(crypto.createHash('sha256').update(JSON.stringify(facts)).digest('hex'),expected,`seed ${seed}`);

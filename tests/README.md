@@ -1,3 +1,28 @@
+# 週六分配與公平性測試（最新）
+
+2026-10-19 已依週六增補規格實作 `scheduling_saturday.js`，固定合法名額後比較整日方案，使用共用增量評分。公平性優先序維持月單節 → 月工時達成率 → 每週AC → 每週BC/AB，未加入後處理雙班移轉。
+
+[最新 400 組比較與週報](results/summary.md)。固定輸入沿用 `ced9647` 的四份 inputs.json，不重新選樣；新結果存 `results/saturday-allocation/`，舊JSON不覆寫。根目錄 summary.md 為最新報告，舊呈現保留在 summary-before-saturday-allocation.md。
+
+```sh
+node --test tests/*.test.cjs
+TZ=Asia/Taipei node tests/evaluate-saturday-allocation.cjs --scenario baseline
+TZ=Asia/Taipei node tests/evaluate-saturday-allocation.cjs --scenario full-only
+TZ=Asia/Taipei node tests/evaluate-saturday-allocation.cjs --scenario mixed
+TZ=Asia/Taipei node tests/evaluate-saturday-allocation.cjs --scenario week-off
+node tests/summarize-saturday-allocation.cjs
+```
+
+`saturday-allocation.test.cjs` 驗證枚舉、增量與全量一致、來源／鎖定、原子性、限制、動態人數及平日不變。`weekly-report.test.cjs` 驗證平日C／早班目標、逐樣本率平均、N/A、短週與排除週六。新週報為AC次數、C達成率、早班達成率；短週C／早班為實際次數。報表指標不參與正式公平性評分。
+
+S07 凍結來源等價測試明確使用 `saturday-before-allocation.cjs` 的檢查點函式，避免新週六算法被錯當成來源重構回歸。只有測試harness的 `saturdayVersion:'checkpoint'` 會載舊函式；正式引擎沒有回退開關。其他測試及正式流程預設新週六。
+
+將來更新 TEST GAS 專案時，需加入新增的 `scheduling_saturday.js` 並同步 Config_system.js、scheduling_fairness.js、scheduling_engine.js；本次尚未上傳或部署。不要把 tests/、tasks/ 上傳為GAS程式。
+
+---
+
+以下為前一輪檢查點測試說明。舊版 `evaluate-adjustments.cjs`、`summarize-adjustments.cjs` 為歷史入口，請勿用來覆寫最新或凍結證據；現在請使用上方新命令。
+
 # 排班測試與公平性評估
 
 2026-10-19：來源追蹤、最低覆蓋修補、公平性調整及截止重試已完成本機實作。正式結果見 [400 次模擬報告](results/summary.md)。未更新線上 Apps Script Library。
