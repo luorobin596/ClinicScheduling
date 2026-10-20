@@ -1,5 +1,65 @@
 # 可驗證的小型任務：來源 → 覆蓋 → 公平性
 
+## 待審新增任務：擴大測試 EX01～EX07（2026-10-20）
+
+規格：[expanded-simulation-spec.md](expanded-simulation-spec.md)。2026-10-20 已依授權編寫 EX01～EX05 與 EX06 成本估算工具，並新增測試案例；依使用者指示只做語法／差異檢查，沒有執行任何測試、生成樣本或模擬。所有驗收框保留未勾選，程式存在不表示已驗證。實際入口與檔案以 tests/EXPANDED_TESTING.md 為準；GitHub workflow、雲端前導及 EX07 未執行。原有完成項目保留於後文。
+
+### EX01：月份與休診日曆（小，1～2 檔）
+
+- [ ] 驗收：三月基本月休為 10／11／9，自行安排均 8 半天；10/09、10/10、10/26 休診，普通週六可營業。
+- [ ] 驗收：週日與假日去重，完整週／短週與跨月邊界正確。
+- 驗證：`node --test tests/expanded-calendar.test.cjs`，逐日核對已確認日曆。
+- 依賴：無。預計檔案：tests/support/expanded-calendar.cjs、tests/expanded-calendar.test.cjs。
+
+### EX02：可重現情境及額度（中，3～4 檔）
+
+- [ ] 驗收：三休假模式、連休 A／B、兩人同／異週與週六群均產生正確原始意願；額外假與基本假不重複。
+- [ ] 驗收：200／5,000／10,000 三份 manifest 總數與配額正確、逐層子集一致、ID 唯一，同種子逐字一致；不出現兩位小兒人員同週連休，且人選輪替有分布統計。
+- 驗證：`node --test tests/expanded-fixtures.test.cjs`，再只生成 manifest 核對 200／5,000／10,000 三版，不執行排班。
+- 依賴：EX01。預計檔案：tests/support/expanded-fixtures.cjs、tests/expanded-fixtures.test.cjs、tests/generate-expanded-inputs.cjs、tests/fixtures/expanded-manifest.json。
+
+檢查點：確認配額與模式例外已由使用者審閱，日曆及額度測試通過，才執行模擬。
+
+### EX03：單組執行與獨立驗證（中，3 檔）
+
+- [ ] 驗收：初始／修補／最終保存統計、來源、預算及停止原因；獨立驗證硬限制、休診零排班、配對與公平性不劣化。
+- [ ] 驗收：負向案例正確識別輸入衝突；搜尋到限與輸入無解分開，失敗不替換。狀態機證據沿用假 Sheet 測試。
+- 驗證：`node --test tests/expanded-evaluation.test.cjs`，每情境少量執行並人工核對失敗樣本。
+- 依賴：EX02。預計檔案：tests/support/expanded-audit.cjs、tests/evaluate-expanded.cjs、tests/expanded-evaluation.test.cjs。
+
+### EX04：三月報告及個人可排目標（中，3 檔）
+
+- [ ] 驗收：零目標 N/A、國定假日短週與週六排除正確；AC／C／早班欄口徑不改，連休者分母按原始意願。
+- [ ] 驗收：成功／衝突分母、分位數、最差案例與個人結果可追溯，未成功樣本不混入公平性平均。
+- 驗證：`node --test tests/expanded-report.test.cjs`，小型手算資料核對比率平均與分位數。
+- 依賴：EX03 輸出格式。預計檔案：tests/summarize-expanded.cjs、tests/expanded-report.test.cjs、tests/support/weekly-report.cjs（必要時）。
+
+### EX05：分批與中斷重跑（中，3 檔）
+
+- [ ] 驗收：相同 manifest 分批／合併不遺失、不重複；缺批、輸入／引擎版本不符明確拒絕完整報告。
+- [ ] 驗收：逐組結果落檔，重跑保留嘗試紀錄；舊 400 組證據不覆寫。
+- 驗證：`node --test tests/expanded-shards.test.cjs`，注入中斷、重複及缺批後核對。
+- 依賴：EX03、EX04。預計檔案：tests/evaluate-expanded.cjs、tests/merge-expanded.cjs、tests/expanded-shards.test.cjs。
+
+檢查點：完整現有測試與新聚焦測試通過；先完成本機小樣本核對；雲端僅先跑 200 組前導，未選定正式規模前不得啟動 5,000／10,000 組。
+
+### EX06：GitHub Actions 200 組前導及成本估算（小，2 檔）
+
+- [ ] 驗收：私人儲存庫 Linux hosted runner 手動觸發、固定時區及 Node 版本，無 Google 憑證；限制並行、逾時及產物保留期限。
+- [ ] 驗收：200 組雲端前導完整對帳、硬限制零違規、8 個負向案例正確拒絕；未解釋搜尋失敗及程式錯誤先調查，不得標示通過。
+- [ ] 驗收：依實際各分層耗時、job 取整分鐘、合併時間與儲存量，估算 5,000／10,000 兩版及含 30% 運算餘裕的成本；先回報，再由使用者決定規模。
+- 驗證：雲端前導產物核對及成本公式手算；未完成規模選擇不得觸發正式工作，搜尋時間到限差異須披露。
+- 依賴：EX05、可用 GitHub 私人儲存庫。預計檔案：.github/workflows/expanded-simulation.yml、tests/README.md。
+
+### EX07：完整執行與結果交付（小，報告／資料）
+
+- [ ] 驗收：使用者選定的 5,000 或 10,000 個唯一案例全部有結果，失敗與未完成不得隱藏；按群／月／模式與預期衝突分開統計。
+- [ ] 驗收：摘要、逐組指標、凍結輸入與最差案例可追溯，完整披露公平性取捨與搜尋上限。
+- 驗證：完整 manifest 對帳、獨立稽核結果及報告人工審閱。
+- 依賴：EX06 前導通過、完成成本回報，且使用者明確選定正式 5,000 或 10,000 組；正式批重跑前導子集，不混算重複案例。預計檔案：tests/results/expanded-2026-09-11/ 下的獨立資料與報告；不覆寫舊結果。
+
+---
+
 狀態：2026-10-19 已依使用者授權完成本機實作與驗證；尚未更新線上 Library。證據及限制見 tests/results/summary.md。
 來源規格：staff-assignment-provenance-spec.md；覆蓋/公平性規格：coverage-fairness-spec.md。
 

@@ -1,0 +1,13 @@
+{
+  "source": "github-actions-observed",
+  "jobs": [
+    {"attempt": "REPLACE_WITH_JOB_JSON_ATTEMPT", "elapsedMs": 0}
+  ],
+  "otherJobElapsedMs": [],
+  "artifactBytes": 0,
+  "retentionDays": 7,
+  "linuxRateUSDPerMinute": 0.006,
+  "storageRateUSDPerGBMonth": 0.25,
+  "ratesCheckedAt": "2026-10-20",
+  "ratesSource": "https://docs.github.com/en/billing/concepts/product-billing/github-actions"
+}

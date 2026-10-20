@@ -1,0 +1,72 @@
+# 擴大測試工具操作說明
+
+2026-10-20：程式與測試案例已編寫，依使用者指示尚未執行測試、產生輸入或跑模擬。以下命令為日後操作說明，不代表已驗證通過。規格見 [expanded-simulation-spec.md](../tasks/expanded-simulation-spec.md)。不修改正式排班引擎；既有 400 組及舊入口保留。
+
+## 三種規模
+
+- 前導 200：三月各 64 個正常／壓力案例，加 3／3／2 個週六全休負向案例。
+- 正式 5,000：4,800 個正常／壓力案例、200 個負向案例。
+- 正式 10,000：9,600 個正常／壓力案例、400 個負向案例。
+- 200 是 5,000 的分層子集；5,000 是 10,000 的分層子集。相同 sampleId 對應相同意願，不用排班結果篩選輸入。
+
+三月基本月休為 10／11／9 天，可自行安排均 8 半天。完整額外連休保留週外的基本額度，再加上該週原營業日；兩人小兒不能同週連休。指定週六的全天休屬「全半天」模式例外，標籤保留。輸入衝突不換種子。
+
+## 日後驗證命令（目前未執行）
+
+```sh
+TZ=Asia/Taipei node --test tests/expanded-*.test.cjs
+TZ=Asia/Taipei node --test tests/*.test.cjs
+```
+
+## 只生成凍結輸入，不排班
+
+```sh
+node tests/generate-expanded-inputs.cjs --size 200 --out tests/results/expanded-2026-09-11/inputs/pilot.json.gz
+node tests/generate-expanded-inputs.cjs --size 5000 --out tests/results/expanded-2026-09-11/inputs/formal-5000.json.gz
+node tests/generate-expanded-inputs.cjs --size 10000 --out tests/results/expanded-2026-09-11/inputs/formal-10000.json.gz
+```
+
+所有輸出要求新路徑，拒絕覆寫既有證據。manifest 內有逐組及全批雜湊；不需 Google 憑證。
+
+## 前導分批執行
+
+200 組拆成 4 批各 50，工作編號為 0～3；各工作只執行自己這一批。下面只是第 0 批示例，另外三批須改 --shard 參數。
+
+```sh
+TZ=Asia/Taipei node tests/evaluate-expanded.cjs --manifest tests/results/expanded-2026-09-11/inputs/pilot.json.gz --out tests/results/expanded-2026-09-11/pilot-records --shards 4 --shard 0
+```
+
+僅傳入 --manifest／--out 預設一次執行整批；雲端必須明確傳入 --shards／--shard。中斷後可以相同分批參數加 `--resume true`，完整終態略過，其他結果重試並保留舊紀錄。不可換 manifest、Node 精確版本、時區、引擎／工具或搜尋預算後接續舊結果。各組即時壓縮落檔，不等整批結束才保存。
+
+每批 job JSON 記錄 attempt ID 與程式內 elapsedMs。雲端日後設定下載產物時保留 shard 子目錄，並將失敗／中斷工作已落檔結果一併取回。執行器錯誤會在逐組狀態顯示；合併檢查才判斷前導通過與否，單一 Node 程序正常結束不代表全部案例合格。
+
+## 合併與報告
+
+```sh
+node tests/merge-expanded.cjs --manifest tests/results/expanded-2026-09-11/inputs/pilot.json.gz --input tests/results/expanded-2026-09-11/pilot-records --out tests/results/expanded-2026-09-11/pilot-report
+node tests/summarize-expanded.cjs --input tests/results/expanded-2026-09-11/pilot-report
+```
+
+缺組會產生 completed=false 的報告並以非零狀態結束；不是完整成功。合併檢查雜湊與來源，不重複計算重試案例；採最新嘗試，其他嘗試保留於索引。未知狀態、程式錯誤與未說明的搜尋失敗不能通過前導。三個月份都至少須有一組成功班表，避免全部輸入衝突仍稱通過。
+
+`summary.md` 為總表，`reports/` 依月／情境／模式分開呈現相同成功樣本的三階段統計、每人月平均、每週 AC／C／早班與週六配對稽核。`statistics.json` 包含均值／中位數／P90／P95／最大值及最差種子。`summary.ndjson.gz` 逐組保存狀態及統計；原始 result 壓縮檔保留成功班表、來源及失敗階段班表。正式統計不覆寫舊 400 組報告。
+
+負向案例除完整月失敗外，另以該營業週六的原始意願呼叫正式日可行性驗證器，確認確實為零骨科可用人員；避免其他日期先衝突就誤稱週六拒絕已驗證。此 probe 是測試工具的診斷，沒有改變正式引擎排班流程。
+
+## 成本回報與放大門檻
+
+雲端前導後，複製 `expanded-usage.example.json`，填入每個 evaluator attempt 對應的 GitHub 實際完整 job 毫秒數（含 setup／checkout／上傳），其他工作時間、上傳產物大小與保存天數，並查核當時官方費率。範例的 0／placeholder 刻意不可用。可選填 `remainingFreeMinutes`、`remainingFreeStorageBytes`，均指前導完成後帳號當下剩餘免費額度；省略就只列假設情境，不冒充已讀取帳號額度。
+
+```sh
+node tests/estimate-expanded-cost.cjs --input tests/results/expanded-2026-09-11/pilot-report --usage /path/to/observed-usage.json
+```
+
+估算逐層加權，負向案例按月合併模式估算；按每個正式批次向上取整分鐘，另外計算工作啟動及合併成本。輸出兩版成本、前導＋正式總用量、30% 運算餘裕及儲存近似值。實際雲端測試環境與產物大小尚待前導量測，不能依本機時間保證費用。
+
+只有使用者看過通過的前導及成本報告並選定規模後，才使用以下正式示例（第 0／50 批）；10,000 組改成對應 manifest、確認數字與 100 批：
+
+```sh
+TZ=Asia/Taipei node tests/evaluate-expanded.cjs --manifest tests/results/expanded-2026-09-11/inputs/formal-5000.json.gz --out tests/results/expanded-2026-09-11/formal-5000-records --shards 50 --shard 0 --confirm-formal-size 5000 --pilot-report tests/results/expanded-2026-09-11/pilot-report
+```
+
+正式入口會要求通過的前導、相同引擎／工具／Node／時區／預算、已產生的成本報告及明確規模參數。重新完整執行所選正式樣本，不把前導重複加進案例分母。GitHub 儲存庫及 Actions workflow 留待後續設定；目前沒有遠端上傳、自動觸發或正式測試。
