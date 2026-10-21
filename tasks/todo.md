@@ -30,7 +30,7 @@
 ### EX04：三月報告及個人可排目標（中，3 檔）
 
 - [ ] 驗收：零目標 N/A、國定假日短週與週六排除正確；AC／C／早班欄口徑不改，連休者分母按原始意願。
-- [ ] 驗收：成功／衝突分母、分位數、最差案例與個人結果可追溯，未成功樣本不混入公平性平均。
+- [ ] 驗收：成功／衝突分母與個人結果可追溯，未成功樣本不混入公平性平均；summary.md 直接包含最終月平均、逐週 AC／C／早班及週六分配表，不顯示前後比較；原始階段與分位數保留 JSON 診斷。
 - 驗證：`node --test tests/expanded-report.test.cjs`，小型手算資料核對比率平均與分位數。
 - 依賴：EX03 輸出格式。預計檔案：tests/summarize-expanded.cjs、tests/expanded-report.test.cjs、tests/support/weekly-report.cjs（必要時）。
 

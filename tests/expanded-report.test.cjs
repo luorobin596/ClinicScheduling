@@ -6,18 +6,18 @@ const os = require('node:os');
 const path = require('node:path');
 const zlib = require('node:zlib');
 const {hash, writeJSON} = require('./support/expanded-io.cjs');
-const {summarize} = require('./summarize-expanded.cjs');
+const {summarize, weeklyCell} = require('./summarize-expanded.cjs');
 const {estimate} = require('./estimate-expanded-cost.cjs');
 
 test('EX04: reporting uses identical successful denominators and renders zero targets as N/A', async t => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'expanded-report-'));
   t.after(() => fs.rmSync(dir, {recursive: true, force: true}));
-  const week = {week: 1, AC: 0, shortWeek: false, cActual: 0, cRate: null, earlyActual: 0, earlyRate: null};
+  const week = {week: 1, openWeekdays: 5, AC: 0, shortWeek: false, cActual: 0, cRate: null, earlyActual: 0, earlyRate: null};
   const stage = singles => ({measure: {score: Array(9).fill(0), staff: [
-    {id: 'FT001', involuntarySingle: singles, attainment: null, capacityHours: 0},
-    {id: 'FT002', involuntarySingle: 0, attainment: 0.9, capacityHours: 168}
+    {id: 'FT001', hours: 0, voluntarySingle: 0, involuntarySingle: singles, attainment: null, capacityHours: 0},
+    {id: 'FT002', hours: 151.2, voluntarySingle: 0, involuntarySingle: 0, attainment: 0.9, capacityHours: 168}
   ]}, weekly: ['FT001', 'FT002'].map(id => ({id, weeks: [week]})),
-  audit: {pairing: [], coverage: []}, report: {stopReason: 'CANDIDATE_LIMIT', evaluated: 20000}});
+  audit: {pairing: [{date: '2026-11-07', actualAB: 1, maxAB: 1, roster: {A: ['FT001', 'FT002'], B: ['FT001']}}], coverage: []}, report: {stopReason: 'CANDIDATE_LIMIT', evaluated: 20000}});
   const valid = {sampleId: 'valid', seed: 1, month: '2026-11', group: 'random', mode: 'full', status: 'VALID',
     elapsedMs: 1, scenario: {weekly: []}, initial: stage(4), repaired: stage(2), final: stage(1)};
   const rejected = {...valid, sampleId: 'rejected', status: 'INPUT_CONFLICT', initial: stage(40)};
@@ -30,9 +30,26 @@ test('EX04: reporting uses identical successful denominators and renders zero ta
   assert.equal(groups['2026-11/random/full'].stages.initial.involuntarySingle.mean, 4);
   assert.equal(groups['2026-11/random/full'].stages.final.involuntarySingle.mean, 1);
   const detail = fs.readFileSync(path.join(dir, 'reports/2026-11_random_full.md'), 'utf8');
-  assert.match(detail, /N\/A → N\/A/);
+  assert.match(detail, /\| 第1週 \| FT001 \| 0.00 \| N\/A \| N\/A \|/);
   assert.doesNotMatch(detail, /N\/A%/);
-  assert.match(fs.readFileSync(path.join(dir, 'summary.md'), 'utf8'), /not-complete/);
+  const summary = fs.readFileSync(path.join(dir, 'summary.md'), 'utf8');
+  assert.match(summary, /not-complete/);
+  assert.match(summary, /每位員工的最終月平均/);
+  assert.match(summary, /\| FT001 \| 0.00 \| 0.00 \| N\/A \| 1.00 \| 0.00 \|/);
+  assert.match(summary, /\| FT002 \| 151.20 \| 168.00 \| 90.00% \| 0.00 \| 0.00 \|/);
+  assert.match(summary, /\| FT001 \| 1.00 \| 0.00 \| 0.00 \| 0.00 \|/);
+  assert.match(summary, /\| FT002 \| 0.00 \| 1.00 \| 0.00 \| 0.00 \|/);
+  for (const text of [summary, detail]) {
+    assert.doesNotMatch(text, /初始 → 最終|初步排班 → 調整完成|\| 階段 \|/);
+    assert.doesNotMatch(text, /\| initial \||\| repaired \||4.00 → 1.00/);
+  }
+});
+
+test('EX04: final-only weekly cells preserve mean ratios, N/A and short-week counts', () => {
+  assert.equal(weeklyCell([], 'c'), 'N/A');
+  assert.equal(weeklyCell([{shortWeek: false, cRate: null}], 'c'), 'N/A');
+  assert.equal(weeklyCell([{shortWeek: false, cRate: 1}, {shortWeek: false, cRate: 0.5}, {shortWeek: false, cRate: null}], 'c'), '75.00%（n=2/3）');
+  assert.equal(weeklyCell([{shortWeek: true, earlyActual: 0}, {shortWeek: true, earlyActual: 1}], 'early'), '0.50 次');
 });
 
 test('EX06: a failed or incomplete pilot cannot produce a cost approval report', async t => {
