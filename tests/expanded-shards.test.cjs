@@ -34,6 +34,23 @@ test('EX05: missing cases remain incomplete, and retry attempts count once', t =
   assert.equal(result.missing.length, 199);
   assert.equal(result.statuses.INPUT_CONFLICT, 1);
   assert.equal(result.samples[0].attempts.length, 2);
+  assert.deepEqual(result.invalid, [first.sampleId], 'Coordinated normal inputs must flag unexpected input conflicts');
+});
+
+test('EX05: coordinated negative cases accept only their designated Saturday conflict', t => {
+  const state = setup(t), input = path.join(state.dir, 'input');
+  const fixtures = state.manifest.fixtures.filter(f => f.scenario.expectedConflict).slice(0, 2);
+  for (const [index, fixture] of fixtures.entries()) {
+    const value = record(fixture, state.identity, 'one', 'EXPECTED_CONFLICT');
+    value.run.negativeProbe = {code: 'INPUT_CONFLICT', details: {date: fixture.scenario.saturday}};
+    value.run.error = {code: 'INPUT_CONFLICT', details: {date: index === 0 ? fixture.scenario.saturday : '2026-09-07'}};
+    value.runHash = hash(value.run);
+    writeJSON(path.join(input, `result-negative-${index}.json.gz`), value);
+  }
+  const result = merge({manifestFile: state.file, input, out: path.join(state.dir, 'merged')});
+  assert.equal(result.statuses.EXPECTED_CONFLICT, 2);
+  assert.deepEqual(result.invalid, [fixtures[1].sampleId]);
+  assert.equal(result.pilotPassed, false);
 });
 test('EX05: manifest and result corruption are rejected before a complete report', t => {
   const state = setup(t), input = path.join(state.dir, 'input');

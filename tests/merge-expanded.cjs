@@ -68,6 +68,7 @@ function merge({manifestFile, input, out}) {
   fs.writeFileSync(temporary, '', {flag: 'wx'});
   for (const [id, pick] of selected) {
     const run = readJSON(pick.file).run;
+    const fixture = expected.get(id);
     statuses[run.status] = (statuses[run.status] || 0) + 1;
     const key = `${run.month}/${run.group}/${run.mode}`;
     if (!groups[key]) groups[key] = {count: 0, statuses: {}};
