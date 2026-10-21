@@ -2,6 +2,7 @@
 const crypto = require('node:crypto');
 const {calendar, MONTHS} = require('./expanded-calendar.cjs');
 const {toRequests, leaveUnits} = require('./leave-model.cjs');
+const {inspectOriginalIntent} = require('./expanded-input-screen.cjs');
 const MODES = ['full', 'half', 'mixed'];
 const GROUPS = ['random', 'one-extra-week', 'two-same-week', 'two-different-weeks', 'saturday', 'one-minimum-week', 'negative-saturday'];
 const STAFF = Array.from({length: 5}, (_, i) => ({id: `FT00${i + 1}`, name: `測試員工${i + 1}`}));
@@ -47,10 +48,10 @@ function descriptors(size) {
   });
 }
 
-function generateFixture(descriptor) {
+function generateCandidate(descriptor, candidateSeed = descriptor.seed) {
   const {month, group, mode, rank, seed} = descriptor;
   const selectionRank = rank + MODES.indexOf(mode) * 37 + MONTHS.indexOf(month) * 101;
-  const cal = calendar(month), random = randomFor(seed), events = [], weekly = [];
+  const cal = calendar(month), random = randomFor(candidateSeed), events = [], weekly = [];
   const open = cal.days.filter(d => d.isOpen);
   const forced = new Map(STAFF.map(s => [s.id, []]));
   let saturday = null;
@@ -139,4 +140,28 @@ function generateFixture(descriptor) {
   fixture.requests = toRequests(events);
   return fixture;
 }
-module.exports = {MODES, GROUPS, STAFF, hash, descriptors, generateFixture};
+function generateFixture(descriptor, {maxAttempts = 1000} = {}) {
+  if (!Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 10000) throw new Error('maxAttempts must be an integer from 1 to 10000');
+  const rejected = [], rejectionCounts = {};
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Keep sampleId, mandatory leave, employee/week rotation and mode fixed.
+    // Only redraw the remaining original leave intentions, never inspect an auto roster.
+    const candidateSeed = attempt === 0 ? descriptor.seed : parseInt(hash(`${descriptor.sampleId}/coordinated-input-v2/${attempt}`).slice(0, 8), 16);
+    const fixture = generateCandidate(descriptor, candidateSeed);
+    const result = inspectOriginalIntent(fixture);
+    if (result.accepted) {
+      fixture.sampling = {policy: 'COORDINATED_ORIGINAL_INTENT_V2', acceptedAttempt: attempt,
+        candidateSeed, rejectedCount: rejected.length, rejectionCounts, rejected,
+        allowedConflictDate: result.allowedConflictDate};
+      return fixture;
+    }
+    const category = result.reason.details.stage || result.reason.message.split('：')[0];
+    rejectionCounts[category] = (rejectionCounts[category] || 0) + 1;
+    rejected.push({attempt, candidateSeed, requestHash: hash(fixture.requests), ...result.reason});
+  }
+  const error = new Error(`休假意願協調達到 ${maxAttempts} 次上限：${descriptor.sampleId}；未產生可凍結樣本，不能改換情境或冒充測試通過。`);
+  error.code = 'INPUT_GENERATION_EXHAUSTED';
+  error.details = {descriptor, maxAttempts, rejectionCounts, rejected};
+  throw error;
+}
+module.exports = {MODES, GROUPS, STAFF, hash, descriptors, generateFixture, generateCandidate};

@@ -30,7 +30,10 @@ function evaluate(fixture) {
   const start = Date.now();
   const run = {sampleId: fixture.sampleId, inputHash: fixture.inputHash, month: fixture.month,
     group: fixture.group, mode: fixture.mode, seed: fixture.seed, rank: fixture.rank,
-    scenario: fixture.scenario, leaveSummary: fixture.leaveSummary};
+    scenario: fixture.scenario, leaveSummary: fixture.leaveSummary,
+    inputCoordination: fixture.sampling ? {policy: fixture.sampling.policy, rejectedCount: fixture.sampling.rejectedCount,
+      acceptedAttempt: fixture.sampling.acceptedAttempt, candidateSeed: fixture.sampling.candidateSeed,
+      rejectionCounts: fixture.sampling.rejectionCounts} : undefined};
   let stage = 'INITIAL', initial, repaired;
   try {
     if (fixture.scenario.expectedConflict) run.negativeProbe = expectedConflictProbe(fixture);
@@ -83,6 +86,10 @@ function evaluate(fixture) {
 
 function runShard({manifestFile, out, shards, shard, resume = false, formalSize, pilotReport}) {
   const manifest = loadManifest(manifestFile);
+  if (manifest.inputPolicy !== 'COORDINATED_ORIGINAL_INTENT_V2' || manifest.fixtures.some(fixture =>
+    fixture.sampling?.policy !== 'COORDINATED_ORIGINAL_INTENT_V2')) {
+    throw new Error('200／5000／10000 組均需使用新版協調模型重新產生輸入；舊版凍結樣本只供歷史比較，不可接續本輪測試。');
+  }
   if (manifest.size !== 200 && formalSize !== manifest.size) throw new Error('Formal execution requires --confirm-formal-size 5000 or 10000 after pilot review');
   assert.ok(Number.isInteger(shards) && shards > 0 && Number.isInteger(shard) && shard >= 0 && shard < shards);
   const identity = contract(manifest), identityHash = hash(identity);

@@ -178,6 +178,11 @@ async function summarize(directory) {
     ...READING_GUIDE, '## 各情境執行狀態與最終公平性', '',
     '| 月份／情境／模式 | 狀態 | 成功樣本 n | 平均非自願單節差距（次） | 平均工時達成率差距（百分點） | 詳細報告 |',
     '|---|---|---:|---:|---:|---|'];
+  if (metadata.inputPolicy === 'COORDINATED_ORIGINAL_INTENT_V2') {
+    lines.splice(6, 0, '## 原始休假意願協調', '',
+      `本批先按小兒可代班、指定班上限與每日最低骨科覆蓋可行性協調原始意願，再凍結 ${metadata.size} 組正式輸入。協調階段另退回 ${metadata.inputSampling?.rejectedCount ?? '未知'} 次原始抽樣；詳見輸入檔各組 sampling.rejected。`, '',
+      '此為通過輸入協調的條件式測試，不代表任意未協調休假都可排班；篩選不使用自動班表或公平性結果。樣本凍結後的排班失敗不換種子。一般樣本若仍出現 INPUT_CONFLICT，列為待調查，不再自動視為可接受的輸入拒絕。刻意週六全休案例只豁免指定的該日期，其餘日期照常協調。', '');
+  }
   const summaries = {}, resultSections = [], auditRows = [], efficiencyRows = [];
   for (const [key, group] of groups) {
     const file = `${key.replaceAll('/', '_')}.md`, target = path.join(directory, 'reports', file);

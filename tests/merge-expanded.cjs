@@ -74,6 +74,9 @@ function merge({manifestFile, input, out}) {
     groups[key].count++;
     groups[key].statuses[run.status] = (groups[key].statuses[run.status] || 0) + 1;
     if (['ERROR', 'SEARCH_LIMIT', 'COVERAGE_UNRESOLVED'].includes(run.status)) invalid.push(id);
+    if (manifest.inputPolicy === 'COORDINATED_ORIGINAL_INTENT_V2' && !fixture.scenario.expectedConflict && run.status === 'INPUT_CONFLICT') invalid.push(id);
+    if (manifest.inputPolicy === 'COORDINATED_ORIGINAL_INTENT_V2' && fixture.scenario.expectedConflict &&
+      run.status === 'EXPECTED_CONFLICT' && run.error?.details?.date !== fixture.scenario.saturday) invalid.push(id);
     if (!['VALID', 'INPUT_CONFLICT', 'EXPECTED_CONFLICT', 'ERROR', 'SEARCH_LIMIT', 'COVERAGE_UNRESOLVED'].includes(run.status)) unknownStatuses.push(id);
     if ((run.scenario.expectedConflict && run.status !== 'EXPECTED_CONFLICT') ||
       (!run.scenario.expectedConflict && run.status === 'EXPECTED_CONFLICT')) invalid.push(id);
@@ -83,6 +86,7 @@ function merge({manifestFile, input, out}) {
   fs.renameSync(temporary, recordsFile);
   const completed = missing.length === 0;
   const metadata = {schema: 'expanded-merged-v1', identity, identityHash, size: manifest.size, completed,
+    inputPolicy: manifest.inputPolicy, inputSampling: manifest.sampling,
     inputRoot: path.resolve(input), statuses, groups, missing, invalid: [...new Set(invalid)], unknownStatuses,
     pilotPassed: manifest.size === 200 && completed && invalid.length === 0 && unknownStatuses.length === 0 &&
       ['2026-09', '2026-10', '2026-11'].every(month => Object.entries(groups).some(([key, value]) => key.startsWith(month + '/') && value.statuses.VALID > 0)) &&
