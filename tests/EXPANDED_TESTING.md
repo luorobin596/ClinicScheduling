@@ -4,6 +4,22 @@
 
 ## GitHub 網頁操作：由使用者推送與啟動
 
+### 已選定正式測試：5,000 組，同時 4 批
+
+2026-10-21 使用者已選擇 5,000 組、同時 4 批。新增 `.github/workflows/formal-simulation-5000.yml`，網頁名稱為 **Clinic scheduling - 5000 cases (4 parallel)**，只手動啟動。參數記錄在 `.github/formal-test-plan.json`，不提供 10,000 組選項。推送由使用者執行；這次設定工作沒有啟動雲端測試。
+
+推送到預設分支後：Actions → Clinic scheduling - 5000 cases (4 parallel) → Run workflow。流程會讀取通過的前導 run **39539952715／attempt 1** 的 `pilot-report` 產物，檢查原始輸入政策、引擎／工具雜湊、時區與搜尋預算，並使用該前導的精確 Node 版本。若不符或前導產物已過期，明確中止，需先重跑前導並更新計畫的 run ID。
+
+驗證通過才生成一次 5,000 組輸入，並核對前導 200 組確實為內容未變的子集。分為 **50 批，每批 100 組，max-parallel=4**。既有評估入口的成本門檻仍保留：套件中的 `cost-estimate.json` 是本次對話已審閱的規劃估算（來源有明確標記），綁定前導 identity；不是假造逐 job 實測帳單。約 400 個運算分鐘的預算是規劃值，不是 GitHub 帳號的強制支出上限。
+
+前導只作驗證依據，正式批會完整重新執行 5,000 組，不把前導重複加進正式分母。最終要求 4,800 組一般／壓力案例成功、200 組預期衝突正確拒絕，且沒有缺組或待調查。`pilotPassed` 僅供 200 組前導使用；正式產物另有 `formalPassed`，摘要顯示「正式測試通過」。
+
+完成後下載 `formal-report-執行編號-嘗試編號`，開啟 `report/summary.md`。產物包含 package/ 的凍結輸入、前導 metadata 及成本審閱計畫，以及 shards/ 原始紀錄與報告，保留 7 天。各批失敗仍盡量上傳資料。重跑同一 run 的失敗工作時沿用 prepare 實際產生的輸入產物名稱，合併該 run 不同嘗試的紀錄並去重；不得跨不同 run／版本混合。
+
+此工作流程只新增 GitHub 設定及計畫，不改測試引擎或已通過前導的工具內容，避免因改變工具雜湊而使既有前導失效。
+
+### 200 組前導工作流程
+
 工作流程位於 `.github/workflows/expanded-simulation.yml`，顯示名稱為 **Clinic scheduling - 200-case pilot**。只設定 `workflow_dispatch`，沒有 push／pull_request／排程觸發，推送程式本身不會執行測試，也沒有正式 5,000／10,000 組選項。
 
 1. 將工作流程與測試工具提交並推送到 GitHub 儲存庫的預設分支。此步由使用者自行執行。
@@ -101,4 +117,4 @@ node tests/estimate-expanded-cost.cjs --input tests/results/expanded-2026-09-11/
 TZ=Asia/Taipei node tests/evaluate-expanded.cjs --manifest tests/results/expanded-2026-09-11/inputs/formal-5000.json.gz --out tests/results/expanded-2026-09-11/formal-5000-records --shards 50 --shard 0 --confirm-formal-size 5000 --pilot-report tests/results/expanded-2026-09-11/pilot-report
 ```
 
-正式入口會要求通過的前導、相同引擎／工具／Node／時區／預算、已產生的成本報告及明確規模參數。重新完整執行所選正式樣本，不把前導重複加進案例分母。已提供手動 200 組前導 workflow，尚未由助理遠端上傳或啟動；正式批 workflow 留待前導與成本回報後再設定。
+正式入口會要求通過的前導、相同引擎／工具／Node／時區／預算、已產生的成本審閱紀錄及明確規模參數。重新完整執行所選正式樣本，不把前導重複加進案例分母。已提供手動 200 組前導與 5,000 組正式 workflow；助理未遠端上傳或啟動。

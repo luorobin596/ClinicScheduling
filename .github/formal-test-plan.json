@@ -1,0 +1,17 @@
+{
+  "schema": "user-reviewed-formal-plan-v1",
+  "size": 5000,
+  "shards": 50,
+  "maxParallel": 4,
+  "pilotRunId": "39539952715",
+  "pilotAttempt": "1",
+  "reviewedDate": "2026-10-21",
+  "reviewSource": "使用者在本次對話選擇 5000 組、同時跑 4 批；推送與手動啟動由使用者執行。",
+  "observedPilotAggregateSeconds": 646,
+  "budgetFormalMinutes": 400,
+  "estimatedWallMinutes": [70, 100],
+  "linuxRateUSDPerMinute": 0.006,
+  "estimateSource": "已完成的新版 200 組逐組耗時、使用者回報 Usage 累計 10m46s，以及已審閱的 30% 運算餘裕估算；不是精確逐 job 帳單。",
+  "pricingSource": "https://docs.github.com/en/billing/reference/actions-runner-pricing",
+  "retentionDays": 7
+}

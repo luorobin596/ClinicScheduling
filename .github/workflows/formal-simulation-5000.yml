@@ -1,0 +1,262 @@
+name: Clinic scheduling - 5000 cases (4 parallel)
+run-name: 5000-case formal test by @${{ github.actor }} (attempt ${{ github.run_attempt }})
+
+# User-selected formal size. No push, pull_request or scheduled trigger.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: clinic-scheduling-formal
+  cancel-in-progress: false
+
+env:
+  TZ: Asia/Taipei
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  prepare:
+    name: Verify passing pilot and freeze 5000 inputs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      node-version: ${{ steps.runtime.outputs.version }}
+      matrix: ${{ steps.package.outputs.matrix }}
+      input-artifact: ${{ steps.package.outputs.artifact }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Read the user-reviewed formal plan
+        id: plan
+        run: |
+          python3 <<'PY'
+          import json, os, re
+          from pathlib import Path
+          plan = json.loads(Path('.github/formal-test-plan.json').read_text())
+          assert plan['schema'] == 'user-reviewed-formal-plan-v1'
+          assert (plan['size'], plan['shards'], plan['maxParallel']) == (5000, 50, 4)
+          assert re.fullmatch(r'\d+', plan['pilotRunId'])
+          assert re.fullmatch(r'\d+', plan['pilotAttempt'])
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f"run={plan['pilotRunId']}\nattempt={plan['pilotAttempt']}\n")
+          PY
+      - name: Download the completed pilot evidence
+        uses: actions/download-artifact@v7
+        with:
+          name: pilot-report-${{ steps.plan.outputs.run }}-${{ steps.plan.outputs.attempt }}
+          run-id: ${{ steps.plan.outputs.run }}
+          github-token: ${{ github.token }}
+          path: cloud-formal/pilot-evidence
+      - name: Require the passing coordinated pilot and its exact Node version
+        id: runtime
+        run: |
+          python3 <<'PY'
+          import json, os, re
+          from pathlib import Path
+          pilot = json.loads(Path('cloud-formal/pilot-evidence/report/merged.json').read_text())
+          assert pilot['size'] == 200 and pilot['completed'] and pilot['pilotPassed']
+          assert pilot['inputPolicy'] == 'COORDINATED_ORIGINAL_INTENT_V2'
+          assert not pilot['missing'] and not pilot['invalid'] and not pilot['unknownStatuses']
+          match = re.fullmatch(r'v(\d+\.\d+\.\d+)', pilot['identity']['node'])
+          assert match
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'version={match.group(1)}\n')
+          PY
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ steps.runtime.outputs.version }}
+          package-manager-cache: false
+      - name: Verify code and record the reviewed cost estimate
+        run: |
+          mkdir -p cloud-formal/validation cloud-formal/package/pilot cloud-formal/package/inputs
+          node <<'NODE'
+          const fs = require('node:fs');
+          const assert = require('node:assert/strict');
+          const {identities, hash, BUDGET} = require('./tests/support/expanded-io.cjs');
+          const pilot = JSON.parse(fs.readFileSync('cloud-formal/pilot-evidence/report/merged.json', 'utf8'));
+          const plan = JSON.parse(fs.readFileSync('.github/formal-test-plan.json', 'utf8'));
+          assert.equal(hash(pilot.identity), pilot.identityHash);
+          for (const [key, value] of Object.entries(identities())) assert.equal(value, pilot.identity[key], `Changed ${key}; run a new pilot`);
+          assert.equal(process.version, pilot.identity.node);
+          assert.equal(process.env.TZ, pilot.identity.timezone);
+          assert.deepEqual(BUDGET, pilot.identity.budget);
+          fs.copyFileSync('cloud-formal/pilot-evidence/report/merged.json', 'cloud-formal/package/pilot/merged.json');
+          fs.copyFileSync('cloud-formal/pilot-evidence/inputs/pilot.json.gz', 'cloud-formal/package/inputs/pilot.json.gz');
+          // This is the estimate reviewed in the conversation, NOT invented per-job billing data.
+          fs.writeFileSync('cloud-formal/package/pilot/cost-estimate.json', JSON.stringify({
+            schema: 'user-reviewed-cost-estimate-v1', identity: pilot.identity, pilotPassed: true,
+            formalExecutionAuthorized: true, review: plan, plans: [{size: 5000,
+              budgetFormalMinutes: plan.budgetFormalMinutes,
+              computeUSDIfFreeMinutesExhausted: plan.budgetFormalMinutes * plan.linuxRateUSDPerMinute}]
+          }, null, 2));
+          fs.copyFileSync('.github/formal-test-plan.json', 'cloud-formal/package/formal-test-plan.json');
+          NODE
+          git rev-parse HEAD > cloud-formal/validation/commit.txt
+          node --version > cloud-formal/validation/node-version.txt
+      - name: Run unit and fake-service integration checks
+        run: node --test tests/*.test.cjs 2>&1 | tee cloud-formal/validation/tests.log
+      - name: Freeze the formal input and verify the pilot is an unchanged subset
+        id: package
+        env:
+          INPUT_ARTIFACT: formal-input-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          node tests/generate-expanded-inputs.cjs --size 5000 --out cloud-formal/package/inputs/formal-5000.json.gz 2>&1 | tee cloud-formal/validation/generation.log
+          node <<'NODE'
+          const fs = require('node:fs');
+          const assert = require('node:assert/strict');
+          const {loadManifest} = require('./tests/support/expanded-io.cjs');
+          const pilot = loadManifest('cloud-formal/package/inputs/pilot.json.gz');
+          const formal = loadManifest('cloud-formal/package/inputs/formal-5000.json.gz');
+          const byId = new Map(formal.fixtures.map(f => [f.sampleId, f.inputHash]));
+          for (const fixture of pilot.fixtures) assert.equal(byId.get(fixture.sampleId), fixture.inputHash, `Changed pilot input: ${fixture.sampleId}`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `matrix=${JSON.stringify({shard: Array.from({length: 50}, (_, i) => i)})}\nartifact=${process.env.INPUT_ARTIFACT}\n`);
+          NODE
+      - name: Preserve validation and generation diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: formal-validation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: cloud-formal/validation/
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Share one immutable formal input and pilot review package
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ steps.package.outputs.artifact }}
+          path: cloud-formal/package/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  formal:
+    name: Formal shard ${{ matrix.shard }} of 50
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ needs.prepare.outputs.node-version }}
+          package-manager-cache: false
+      - uses: actions/download-artifact@v7
+        with:
+          name: ${{ needs.prepare.outputs.input-artifact }}
+          path: cloud-formal/package
+      - name: Evaluate 100 frozen formal cases
+        env:
+          FORMAL_SHARD: ${{ matrix.shard }}
+        run: |
+          mkdir -p cloud-formal/logs
+          node tests/evaluate-expanded.cjs --manifest cloud-formal/package/inputs/formal-5000.json.gz --out cloud-formal/records --shards 50 --shard "$FORMAL_SHARD" --confirm-formal-size 5000 --pilot-report cloud-formal/package/pilot 2>&1 | tee "cloud-formal/logs/shard-$FORMAL_SHARD.log"
+      - name: Save completed cases even if a shard fails
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: formal-shard-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            cloud-formal/records/
+            cloud-formal/logs/
+          if-no-files-found: warn
+          compression-level: 0
+          retention-days: 7
+
+  report:
+    name: Merge and publish the 5000-case final report
+    needs: [prepare, formal]
+    if: ${{ !cancelled() && needs.prepare.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ needs.prepare.outputs.node-version }}
+          package-manager-cache: false
+      - uses: actions/download-artifact@v7
+        with:
+          name: ${{ needs.prepare.outputs.input-artifact }}
+          path: cloud-formal/package
+      - name: Download all shard attempts, keeping original directories
+        uses: actions/download-artifact@v7
+        with:
+          pattern: formal-shard-*-${{ github.run_id }}-*
+          path: cloud-formal/shards
+          merge-multiple: false
+      - name: Merge all 5000 identities and check constraints
+        id: merge
+        continue-on-error: true
+        run: |
+          mkdir -p cloud-formal/logs
+          node tests/merge-expanded.cjs --manifest cloud-formal/package/inputs/formal-5000.json.gz --input cloud-formal/shards --out cloud-formal/report 2>&1 | tee cloud-formal/logs/merge.log
+      - name: Generate final-only aggregate and scenario tables
+        if: ${{ !cancelled() && hashFiles('cloud-formal/report/merged.json') != '' }}
+        run: |
+          node tests/summarize-expanded.cjs --input cloud-formal/report
+          node <<'NODE'
+          const fs = require('node:fs');
+          const file = 'cloud-formal/report/merged.json';
+          const report = JSON.parse(fs.readFileSync(file, 'utf8'));
+          report.formalPassed = report.size === 5000 && report.completed && !report.invalid.length &&
+            !report.unknownStatuses.length && report.statuses.VALID === 4800 && report.statuses.EXPECTED_CONFLICT === 200;
+          fs.writeFileSync(file, JSON.stringify(report) + '\n');
+          const summary = 'cloud-formal/report/summary.md';
+          const text = fs.readFileSync(summary, 'utf8')
+            .replace('前導通過：false。', `正式測試通過：${report.formalPassed}。`)
+            .replace('雲端前導通過後仍需成本回報與使用者選定規模，才執行正式批。',
+              '本次為使用者已審閱成本並選定的 5,000 組正式測試，最多同時執行 4 批。');
+          fs.writeFileSync(summary, text);
+          NODE
+      - name: Publish workflow summary
+        if: ${{ !cancelled() }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const file = 'cloud-formal/report/merged.json';
+          const lines = ['## 5,000 組正式排班測試（最多同時 4 批）', ''];
+          if (fs.existsSync(file)) {
+            const report = JSON.parse(fs.readFileSync(file, 'utf8'));
+            lines.push(`完整：**${report.completed}**；狀態：\`${JSON.stringify(report.statuses)}\`。`, '',
+              `缺少 ${report.missing.length} 組；待調查 ${report.invalid.length} 組。`);
+          } else lines.push('無合併結果，請查原始 shard 產物及 merge.log。');
+          lines.push('', '下載 formal-report 產物；report/summary.md 包含綜合月平均、完整週／短週平均、失敗原因及各情境表格。', '',
+            '這是正式批，不使用僅適用 200 組前導的 pilotPassed 欄位判定成功；實際用量請查本次 Usage。', '');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n'));
+          NODE
+      - name: Preserve final and raw evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: formal-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: cloud-formal/
+          if-no-files-found: warn
+          compression-level: 0
+          retention-days: 7
+      - name: Fail if formal cases are incomplete or contain unexpected failures
+        if: ${{ !cancelled() }}
+        env:
+          MERGE_OUTCOME: ${{ steps.merge.outcome }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const file = 'cloud-formal/report/merged.json';
+          if (process.env.MERGE_OUTCOME !== 'success' || !fs.existsSync(file)) process.exit(1);
+          const report = JSON.parse(fs.readFileSync(file, 'utf8'));
+          if (report.size !== 5000 || !report.completed || report.invalid.length || report.unknownStatuses.length ||
+              report.statuses.VALID !== 4800 || report.statuses.EXPECTED_CONFLICT !== 200) process.exit(1);
+          NODE
