@@ -8,7 +8,7 @@
 
 2026-10-21 使用者已選擇 5,000 組、同時 4 批。新增 `.github/workflows/formal-simulation-5000.yml`，網頁名稱為 **Clinic scheduling - 5000 cases (4 parallel)**，只手動啟動。參數記錄在 `.github/formal-test-plan.json`，不提供 10,000 組選項。推送由使用者執行；這次設定工作沒有啟動雲端測試。
 
-推送到預設分支後：Actions → Clinic scheduling - 5000 cases (4 parallel) → Run workflow。流程會讀取通過的前導 run **39539952715／attempt 1** 的 `pilot-report` 產物，檢查原始輸入政策、引擎／工具雜湊、時區與搜尋預算，並使用該前導的精確 Node 版本。若不符或前導產物已過期，明確中止，需先重跑前導並更新計畫的 run ID。
+推送到預設分支後：Actions → Clinic scheduling - 5000 cases (4 parallel) → Run workflow。流程會讀取通過的前導 run **39562995320／attempt 1** 的 `pilot-report` 產物，檢查原始輸入政策、引擎／工具雜湊、時區與搜尋預算，並使用該前導的精確 Node 版本。若不符或前導產物已過期，明確中止，需先重跑前導並更新計畫的 run ID。
 
 驗證通過才生成一次 5,000 組輸入，並核對前導 200 組確實為內容未變的子集。分為 **50 批，每批 100 組，max-parallel=4**。既有評估入口的成本門檻仍保留：套件中的 `cost-estimate.json` 是本次對話已審閱的規劃估算（來源有明確標記），綁定前導 identity；不是假造逐 job 實測帳單。約 400 個運算分鐘的預算是規劃值，不是 GitHub 帳號的強制支出上限。
 
@@ -137,3 +137,10 @@ TZ=Asia/Taipei node tests/evaluate-expanded.cjs --manifest tests/results/expande
 資料 schema 為 weekday-workdays-v2，含 initial／repaired／workdayRepaired／final 空班清單及 run.workdayRepaired 統計／報告；最終成功空班為零，由獨立原始意願稽核及 merge 再確認。未解為 WORKDAY_UNRESOLVED，預算到限為 SEARCH_LIMIT，均會阻擋前導／正式驗收。舊 v1 結果仍可製作歷史報告，但不代表符合新規則；合併新引擎結果不接受缺少 v2 稽核的 VALID。
 
 本機 197／197 測試通過，針對既有 61 組問題樣本僅重跑初始／兩階段修補，70 筆空班歸零（含舊 final 的 65 筆），未新增班。這不是完整新版 200 組驗收；仍須使用者推送後手動跑前導。前導 39555747462 也早於本次修改，不能綁定新正式批；此輪未更改 workflow 放行條件或前導綁定。
+
+
+## 正式批綁定更新：39562995320（2026-10-21）
+
+使用者已審閱本次新版前導並授權更新：192 VALID、8 EXPECTED_CONFLICT、最終平日未請假空班 0。formal-test-plan.json 已綁定 run 39562995320／attempt 1；workflow 動態讀取此檔，不需修改 YAML。正式批仍為 5,000 組、50 批各 100 組、最多同時 4 批。本文較早的「新版前導待執行」敘述為歷史紀錄，以此節為準。
+
+沿用已審閱的 400 分鐘運算預留；歷史 10m46s 用量已移到 historicalPilotUsage，來源為 39539952715。本次尚未取得完整 job Usage，不宣稱重新估算完成。未推送、未啟動正式測試；使用者推送後可從 Actions 手動執行正式批。

@@ -3,15 +3,21 @@
   "size": 5000,
   "shards": 50,
   "maxParallel": 4,
-  "pilotRunId": "39539952715",
+  "pilotRunId": "39562995320",
   "pilotAttempt": "1",
   "reviewedDate": "2026-10-21",
-  "reviewSource": "使用者在本次對話選擇 5000 組、同時跑 4 批；推送與手動啟動由使用者執行。",
-  "observedPilotAggregateSeconds": 646,
+  "reviewSource": "使用者已審閱前導 39562995320／attempt 1 並同意更新正式 5000 組綁定；50 批、同時最多 4 批；推送與手動啟動仍由使用者執行。",
   "budgetFormalMinutes": 400,
-  "estimatedWallMinutes": [70, 100],
+  "estimatedWallMinutes": [
+    70,
+    100
+  ],
   "linuxRateUSDPerMinute": 0.006,
-  "estimateSource": "已完成的新版 200 組逐組耗時、使用者回報 Usage 累計 10m46s，以及已審閱的 30% 運算餘裕估算；不是精確逐 job 帳單。",
+  "estimateSource": "沿用先前已審閱的 400 分鐘運算預留與 70～100 分鐘等待規劃。10m46s 為歷史前導 39539952715 的 Usage；尚未取得本次前導 39562995320 的完整 job Usage，不將歷史用量誤列為本次實測。400 分鐘為規劃預算，不是計費上限。",
   "pricingSource": "https://docs.github.com/en/billing/reference/actions-runner-pricing",
-  "retentionDays": 7
+  "retentionDays": 7,
+  "historicalPilotUsage": {
+    "runId": "39539952715",
+    "aggregateSeconds": 646
+  }
 }
