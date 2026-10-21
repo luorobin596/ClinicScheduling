@@ -32,7 +32,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           package-manager-cache: false
       - name: Record exact Node version for every subsequent job
         id: runtime
