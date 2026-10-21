@@ -51,6 +51,71 @@ function monthlyTable(runs, ids, extra = null) {
   }
   return lines;
 }
+const cell = value => String(value ?? '—').replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+  .replaceAll('>', '&gt;').replaceAll('|', '&#124;').replace(/\r?\n/g, '<br>');
+function failureTables(runs) {
+  const failed = runs.filter(run => run.status !== 'VALID');
+  if (!failed.length) return ['無失敗或輸入衝突案例。'];
+  const counts = new Map();
+  for (const run of failed) {
+    const error = run.error || {};
+    const key = [run.status, error.code || '未提供', error.stage || '未提供'].join('／');
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  const lines = ['預期衝突是刻意設計的拒絕案例，與一般輸入衝突及程式／搜尋失敗分開列出；以下保留實際錯誤訊息，不從狀態名稱推測原因。', '',
+    '| 狀態／錯誤碼／發生階段 | 組數 |', '|---|---:|',
+    ...[...counts].map(([key, count]) => `| ${cell(key)} | ${count} |`), '',
+    '| 案例 sampleId（seed） | 月份／情境／模式 | 狀態 | 日期 | 員工 | 錯誤碼／階段 | 失敗原因 | 詳細診斷 |',
+    '|---|---|---|---|---|---|---|---|'];
+  for (const run of failed) {
+    const error = run.error || {}, details = error.details || {};
+    const date = details.date || details.request?.date || (run.status === 'EXPECTED_CONFLICT' ? run.scenario.saturday : null);
+    const id = details.id || details.staff_id || details.request?.staff_id;
+    const diagnostic = {...details};
+    if (run.negativeProbe) diagnostic.expectedSaturdayProbe = run.negativeProbe;
+    lines.push(`| ${cell(run.sampleId)}（${cell(run.seed)}） | ${cell(`${run.month}/${run.group}/${run.mode}`)} | ${cell(run.status)} | ${cell(date)} | ${cell(id)} | ${cell(`${error.code || '未提供'}／${error.stage || '未提供'}`)} | ${cell(error.message || '原始紀錄未提供錯誤訊息，需查核該案例')} | ${cell(JSON.stringify(diagnostic))} |`);
+  }
+  return lines;
+}
+function combinedTables(runs) {
+  const ids = STAFF.map(s => s.id);
+  const monthly = [], weekly = [], lines = ['## 綜合全部情境：各員工月平均', '',
+    `以下合併全部月份／情境／模式的 ${runs.length} 組成功班表，每張月班表各算一筆，不把各情境平均再等權平均。失敗案例不計入，也不當作零次；不同情境的成功樣本數會影響整體比重。`, '',
+    '工時達成率先逐張班表算個人比率再平均；有效 n 排除應排工時為零者。單節總次數＝非自願＋自願，公平性優先考量仍是非自願單節。', '',
+    '| 員工 | 成功月樣本 n | 達成率有效 n | 平均實際工時 | 平均應排工時 | 平均月工時達成率 | 平均單節總次數 | 平均非自願單節次數 | 平均自願單節次數 |',
+    '|---|---:|---:|---:|---:|---:|---:|---:|---:|'];
+  for (const id of ids) {
+    const people = runs.map(run => run.final.measure.staff.find(s => s.id === id)).filter(Boolean);
+    const rates = people.map(s => s.attainment).filter(Number.isFinite);
+    const row = {id, monthlySamples: people.length, attainmentSamples: rates.length,
+      hours: mean(people.map(s => s.hours)), capacityHours: mean(people.map(s => s.capacityHours)), attainment: mean(rates),
+      involuntarySingle: mean(people.map(s => s.involuntarySingle)), voluntarySingle: mean(people.map(s => s.voluntarySingle)),
+      totalSingle: mean(people.map(s => s.involuntarySingle + s.voluntarySingle))};
+    monthly.push(row);
+    lines.push(`| ${id} | ${row.monthlySamples} | ${row.attainmentSamples} | ${number(row.hours)} | ${number(row.capacityHours)} | ${percentage(rates)} | ${number(row.totalSingle)} | ${number(row.involuntarySingle)} | ${number(row.voluntarySingle)} |`);
+  }
+  lines.push('', '## 綜合全部情境：各員工平均每週', '',
+    '每張成功班表中，每個至少有一個營業平日的週各算一筆。完整週與短週依營業平日數分開合併，避免把百分比與次數混算；完全沒有營業平日的週不納入此表。個人整週請假仍保留在週樣本中，其零目標達成率以 N/A 排除。', '',
+    'AC 為同類週樣本的平均次數；完整週 C／早班為各週個人達成率的平均，短週為實際平均次數。不同月份的週數不同，因此本表不是月總次數除以固定四週。', '',
+    '| 週型 | 員工 | 週樣本 n | AC 平均次數 | 平日 C 達成率／短週次數 | 平日早班達成率／短週次數 |',
+    '|---|---|---:|---:|---:|---:|');
+  // Explicitly separate every short-week length rather than mixing 1- and 4-day weeks.
+  for (const days of [5, 4, 3, 2, 1]) for (const id of ids) {
+    const rows = runs.flatMap(run => run.final.weekly.find(person => person.id === id)?.weeks || [])
+      .filter(week => week.openWeekdays === days);
+    if (!rows.length) continue;
+    const row = {id, openWeekdays: days, weeklySamples: rows.length, AC: mean(rows.map(w => w.AC)),
+      cValue: days === 5 ? mean(rows.map(w => w.cRate)) : mean(rows.map(w => w.cActual)),
+      earlyValue: days === 5 ? mean(rows.map(w => w.earlyRate)) : mean(rows.map(w => w.earlyActual)),
+      cValidSamples: days === 5 ? rows.filter(w => Number.isFinite(w.cRate)).length : rows.length,
+      earlyValidSamples: days === 5 ? rows.filter(w => Number.isFinite(w.earlyRate)).length : rows.length,
+      unit: days === 5 ? 'ratio' : 'count'};
+    weekly.push(row);
+    lines.push(`| ${days === 5 ? '完整週（5 平日）' : `短週（${days} 平日）`} | ${id} | ${rows.length} | ${number(row.AC)} | ${weeklyCell(rows, 'c')} | ${weeklyCell(rows, 'early')} |`);
+  }
+  if (!weekly.length) lines.push('', '沒有可統計的成功週樣本，各週指標為 N/A。');
+  return {lines, monthly, weekly};
+}
 function outcomeTables(group) {
   const runs = group.successful;
   const ids = runs[0]?.final.measure.staff.map(s => s.id) || STAFF.map(s => s.id);
@@ -88,20 +153,21 @@ function outcomeTables(group) {
   return lines;
 }
 async function summarize(directory) {
-  const metadata = readJSON(path.join(directory, 'merged.json')), groups = new Map();
+  const metadata = readJSON(path.join(directory, 'merged.json')), groups = new Map(), allSuccessful = [], failures = [];
   for await (const run of readRuns(directory)) {
     const key = `${run.month}/${run.group}/${run.mode}`;
-    if (!groups.has(key)) groups.set(key, {statuses: {}, elapsed: [], successful: [], stageMetrics: {initial: {}, repaired: {}, final: {}}});
+    if (!groups.has(key)) groups.set(key, {statuses: {}, elapsed: [], successful: [], failures: [], stageMetrics: {initial: {}, repaired: {}, final: {}}});
     const group = groups.get(key);
     group.statuses[run.status] = (group.statuses[run.status] || 0) + 1;
     group.elapsed.push(run.elapsedMs);
     if (run.status === 'VALID') {
       group.successful.push(run);
+      allSuccessful.push(run);
       // Retain machine-readable phase diagnostics; visible tables use final only.
       for (const stage of ['initial', 'repaired', 'final']) for (const [metric, value] of Object.entries(metrics(run[stage].measure))) {
         (group.stageMetrics[stage][metric] ||= []).push(value);
       }
-    }
+    } else { group.failures.push(run); failures.push(run); }
   }
   const lines = ['# 擴大排班測試結果', '',
     `規模：${metadata.size}；完整：${metadata.completed}；前導通過：${metadata.pilotPassed}。`, '',
@@ -123,7 +189,7 @@ async function summarize(directory) {
     }
     for (const [name, label] of Object.entries(METRICS)) detail.push(`| ${label} | ${average(group.stageMetrics.final[name] || [])} |`);
     const tables = outcomeTables(group);
-    detail.push('', ...tables, '', '## 週六結構及搜尋診斷', '',
+    detail.push('', '## 失敗原因', '', ...failureTables(group.failures), '', ...tables, '', '## 週六結構及搜尋診斷', '',
       '| sampleId | 週六最大 AB 稽核 | 公平性停止原因 | 候選數 | 耗時 ms |', '|---|---|---|---:|---:|');
     for (const run of group.successful) detail.push(`| ${run.sampleId} | ${run.final.audit.pairing.map(d => `${d.date}: ${d.actualAB}/${d.maxAB}`).join('; ')} | ${run.final.report.stopReason} | ${run.final.report.evaluated} | ${run.elapsedMs} |`);
     const worst = {};
@@ -132,14 +198,17 @@ async function summarize(directory) {
     detail.push('', '## 最差案例種子（診斷用）', '', '```json', JSON.stringify(worst, null, 2), '```', '');
     fs.mkdirSync(path.dirname(target), {recursive: true});
     fs.writeFileSync(target, detail.join('\n'), {flag: 'wx'});
-    summaries[key] = {statuses: group.statuses, elapsed: stats(group.elapsed), stages, worst};
+    summaries[key] = {statuses: group.statuses, elapsed: stats(group.elapsed), stages, worst,
+      failures: group.failures.map(run => ({sampleId: run.sampleId, seed: run.seed, status: run.status, error: run.error, negativeProbe: run.negativeProbe}))};
     lines.push(`| ${key} | ${JSON.stringify(group.statuses)} | ${group.successful.length} | ${average(group.stageMetrics.final.involuntarySingle || [])} | ${average(group.stageMetrics.final.attainmentPercentagePoints || [])} | [詳細](reports/${file}) |`);
     resultSections.push('', `## ${key}（成功 ${group.successful.length} 組）`, '', ...tables);
     const dates = group.successful.flatMap(run => run.final.audit.pairing);
     auditRows.push(`| ${key} | ${dates.length} | ${dates.filter(d => d.actualAB !== d.maxAB).length} |`);
     efficiencyRows.push(`| ${key} | ${group.elapsed.length} | ${average(group.elapsed)} | ${average(group.successful.map(run => run.elapsedMs))} | ${group.successful.filter(run => /LIMIT/.test(run.final.report.stopReason)).length} |`);
   }
-  lines.push('', '## 最終週六 AB 結構獨立驗證', '',
+  const combined = combinedTables(allSuccessful);
+  lines.push('', ...combined.lines, '', '## 全部情境的失敗原因', '', ...failureTables(failures), '',
+    '## 最終週六 AB 結構獨立驗證', '',
     '| 月份／情境／模式 | 最終稽核日期數 | 未達最大可行 AB 日期數 |', '|---|---:|---:|', ...auditRows, '',
     '## 效率與搜尋界限', '',
     '完整評估耗時含讀入引擎、排班、修補、調整與獨立稽核，不代表線上 GAS 執行時間。公平性到限後仍可能保留合法結果，不代表已找到最佳解。', '',
@@ -148,7 +217,8 @@ async function summarize(directory) {
     '逐組錯誤、停止原因及保留的重試紀錄見 merged.json 與 summary.ndjson.gz；原始壓縮紀錄包含成功班表或失敗階段班表。', '',
     `缺批／缺樣本：${metadata.missing.join(', ') || '無'}。`, '',
     `待調查：${metadata.invalid.join(', ') || '無'}。`, '');
-  writeJSON(path.join(directory, 'statistics.json'), {identity: metadata.identity, completed: metadata.completed, groups: summaries});
+  writeJSON(path.join(directory, 'statistics.json'), {identity: metadata.identity, completed: metadata.completed,
+    combined: {successfulSamples: allSuccessful.length, monthly: combined.monthly, weekly: combined.weekly}, groups: summaries});
   fs.writeFileSync(path.join(directory, 'summary.md'), lines.join('\n'), {flag: 'wx'});
   return summaries;
 }
@@ -157,4 +227,4 @@ if (require.main === module) {
   if (!args['--input']) throw new Error('--input is required');
   summarize(path.resolve(args['--input'])).catch(error => { console.error(error); process.exitCode = 1; });
 }
-module.exports = {summarize, weeklyCell};
+module.exports = {summarize, weeklyCell, combinedTables, failureTables};

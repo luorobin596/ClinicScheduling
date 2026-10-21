@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const zlib = require('node:zlib');
 const {hash, writeJSON} = require('./support/expanded-io.cjs');
-const {summarize, weeklyCell} = require('./summarize-expanded.cjs');
+const {summarize, weeklyCell, combinedTables, failureTables} = require('./summarize-expanded.cjs');
 const {estimate} = require('./estimate-expanded-cost.cjs');
 
 test('EX04: reporting uses identical successful denominators and renders zero targets as N/A', async t => {
@@ -21,6 +21,8 @@ test('EX04: reporting uses identical successful denominators and renders zero ta
   const valid = {sampleId: 'valid', seed: 1, month: '2026-11', group: 'random', mode: 'full', status: 'VALID',
     elapsedMs: 1, scenario: {weekly: []}, initial: stage(4), repaired: stage(2), final: stage(1)};
   const rejected = {...valid, sampleId: 'rejected', status: 'INPUT_CONFLICT', initial: stage(40)};
+  rejected.error = {code: 'INPUT_CONFLICT', stage: 'INITIAL', message: '小兒代班衝突 | 無可用人員',
+    details: {date: '2026-11-05', id: 'FT003'}};
   delete rejected.repaired; delete rejected.final;
   const bytes = zlib.gzipSync([valid, rejected].map(r => JSON.stringify(r)).join('\n') + '\n');
   fs.writeFileSync(path.join(dir, 'summary.ndjson.gz'), bytes);
@@ -34,6 +36,12 @@ test('EX04: reporting uses identical successful denominators and renders zero ta
   assert.doesNotMatch(detail, /N\/A%/);
   const summary = fs.readFileSync(path.join(dir, 'summary.md'), 'utf8');
   assert.match(summary, /not-complete/);
+  assert.match(summary, /綜合全部情境：各員工月平均/);
+  assert.match(summary, /綜合全部情境：各員工平均每週/);
+  assert.match(summary, /小兒代班衝突 &#124; 無可用人員/);
+  assert.match(detail, /小兒代班衝突 &#124; 無可用人員/);
+  assert.match(summary, /2026-11-05/);
+  assert.match(summary, /\| FT001 \| 1 \| 0 \| 0.00 \| 0.00 \| N\/A \| 1.00 \| 1.00 \| 0.00 \|/);
   assert.match(summary, /每位員工的最終月平均/);
   assert.match(summary, /\| FT001 \| 0.00 \| 0.00 \| N\/A \| 1.00 \| 0.00 \|/);
   assert.match(summary, /\| FT002 \| 151.20 \| 168.00 \| 90.00% \| 0.00 \| 0.00 \|/);
@@ -43,6 +51,48 @@ test('EX04: reporting uses identical successful denominators and renders zero ta
     assert.doesNotMatch(text, /初始 → 最終|初步排班 → 調整完成|\| 階段 \|/);
     assert.doesNotMatch(text, /\| initial \||\| repaired \||4.00 → 1.00/);
   }
+});
+
+test('EX04: combined statistics weight successful months and weeks, separating every short-week length', () => {
+  const week = (days, AC, c, early) => ({openWeekdays: days, shortWeek: days < 5, AC,
+    ...(days === 5 ? {cRate: c, earlyRate: early} : {cActual: c, earlyActual: early})});
+  const run = (rate, singles, weeks) => ({final: {
+    measure: {staff: [{id: 'FT001', hours: 80, capacityHours: 100, attainment: rate, involuntarySingle: singles, voluntarySingle: 1}]},
+    weekly: [{id: 'FT001', weeks}]
+  }});
+  const result = combinedTables([
+    run(0.5, 1, [week(5, 1, 1, null), week(2, 0, 1, 0), week(0, 99, 0, 0)]),
+    run(1, 3, [week(5, 3, 0.5, 1), week(2, 1, 2, 1)]),
+    run(1, 3, [week(5, 2, null, 0.5), week(1, 0, 1, 0)])
+  ]);
+  const monthly = result.monthly.find(p => p.id === 'FT001');
+  assert.equal(monthly.monthlySamples, 3);
+  assert.equal(monthly.attainment, 2.5 / 3);
+  assert.equal(monthly.totalSingle, 10 / 3);
+  const full = result.weekly.find(p => p.id === 'FT001' && p.openWeekdays === 5);
+  assert.equal(full.AC, 2);
+  assert.equal(full.weeklySamples, 3);
+  assert.equal(full.cValue, 0.75);
+  assert.equal(full.cValidSamples, 2);
+  assert.equal(full.earlyValue, 0.75);
+  const short = result.weekly.find(p => p.id === 'FT001' && p.openWeekdays === 2);
+  assert.equal(short.cValue, 1.5);
+  assert.equal(short.weeklySamples, 2);
+  assert.ok(result.weekly.every(row => row.openWeekdays > 0));
+  const text = result.lines.join('\n');
+  assert.match(text, /75.00%（n=2\/3）/);
+  assert.match(text, /1.50 次/);
+});
+
+test('EX04: failure reasons distinguish expected conflicts, real conflicts and missing diagnostics', () => {
+  const lines = failureTables([
+    {sampleId: 'negative', seed: 1, month: '2026-11', group: 'negative-saturday', mode: 'full', status: 'EXPECTED_CONFLICT',
+      scenario: {saturday: '2026-11-07'}, error: {code: 'INPUT_CONFLICT', stage: 'REPAIR', message: '週六無人', details: {date: '2026-11-07'}}},
+    {sampleId: 'unknown', status: 'ERROR', scenario: {}, month: '2026-11', group: 'random', mode: 'mixed'}
+  ]).join('\n');
+  assert.match(lines, /EXPECTED_CONFLICT／INPUT_CONFLICT／REPAIR/);
+  assert.match(lines, /週六無人/);
+  assert.match(lines, /原始紀錄未提供錯誤訊息/);
 });
 
 test('EX04: final-only weekly cells preserve mean ratios, N/A and short-week counts', () => {
