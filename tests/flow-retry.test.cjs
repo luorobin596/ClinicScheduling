@@ -23,6 +23,7 @@ function setup(status = 'FT_WINDOW_OPEN', options = {}) {
       },
       updateToPublished() { assert.equal(state.locked, true); state.status = 'PUBLISHED'; }
     },
+    ScheduleReport: { send(context) { assert.equal(state.exported, state.engineCalls); if (options.mailError) throw new Error('mail unavailable'); state.mailed = (state.mailed || 0) + 1; } },
     SchedulingEngine: { generateSchedule(runId) {
       assert.equal(state.locked, true); state.engineCalls++;
       assert.equal(state.status, 'FT_WINDOW_CLOSED');
@@ -132,4 +133,21 @@ test('cutoff refuses malformed state columns before any writes', () => {
   rows[0][6] = 'missing-status';
   assert.throws(() => repo.updateToFtClosed(3), /缺少/);
   assert.equal(rows[2][3], 'original-cutoff');
+});
+
+test('every successful rerun mails after export; failed scheduling/export never mails', () => {
+  const {state, sandbox} = setup('FT_WINDOW_CLOSED');
+  sandbox.CoreSystem.closeFtWindow(); sandbox.CoreSystem.closeFtWindow();
+  assert.equal(state.mailed, 2);
+  for (const options of [{engineError:true}, {exportError:true}]) {
+    const failed = setup('FT_WINDOW_CLOSED', options);
+    assert.throws(() => failed.sandbox.CoreSystem.closeFtWindow());
+    assert.equal(failed.state.mailed, undefined);
+  }
+});
+test('mail failure returns warning without restoring or rerunning completed schedule', () => {
+  const {state, sandbox} = setup('FT_WINDOW_CLOSED', {mailError:true});
+  assert.match(sandbox.CoreSystem.closeFtWindow(), /排班.*完成.*報告.*未寄出/);
+  assert.equal(state.failure, undefined); assert.equal(state.engineCalls, 1);
+  assert.equal(state.exported, 1); assert.equal(state.locked, false);
 });

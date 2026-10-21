@@ -17,13 +17,15 @@ var SchedulingEngine = {
     const initialStats = ScheduleFairness.measure(context, staff);
     ScheduleAdjustments.validate(context, staff, { requireMinimumCoverage: false });
     const repaired = ScheduleAdjustments.repair(context, staff, settings);
-    const optimized = ScheduleAdjustments.improve(repaired.context, staff, settings);
+    const workdayRepaired = ScheduleAdjustments.repairWorkdays(repaired.context, staff, settings);
+    const optimized = ScheduleAdjustments.improve(workdayRepaired.context, staff, settings);
     const result = optimized.context;
     result.adjustmentReport = {
       initial: initialStats, coverageRepaired: ScheduleFairness.measure(repaired.context, staff),
-      fairnessAdjusted: optimized.report.after, repair: repaired.report, fairness: optimized.report
+      workdayRepaired: ScheduleFairness.measure(workdayRepaired.context, staff),
+      fairnessAdjusted: optimized.report.after, repair: repaired.report, workdayRepair: workdayRepaired.report, fairness: optimized.report
     };
-    ScheduleAdjustments.validate(result, staff, { requireMinimumCoverage: true, requireWeekdayWorkdays: true });
+    ScheduleAdjustments.validate(result, staff, { requireMinimumCoverage: true, requireWeekdayWorkdays: true, requireAllWeekdayWorkdays: true });
     this.saveToScheduleOutput(result);
     return result;
   },

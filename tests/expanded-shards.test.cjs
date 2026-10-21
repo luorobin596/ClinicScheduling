@@ -37,6 +37,26 @@ test('EX05: missing cases remain incomplete, and retry attempts count once', t =
   assert.deepEqual(result.invalid, [first.sampleId], 'Coordinated normal inputs must flag unexpected input conflicts');
 });
 
+test('WD04 unresolved workdays are recognized failures and nonempty v2 finals cannot merge as VALID', t => {
+  const state = setup(t), input = path.join(state.dir, 'input');
+  const fixture = state.manifest.fixtures.find(f => !f.scenario.expectedConflict);
+  const failed = record(fixture, state.identity, 'one', 'WORKDAY_UNRESOLVED');
+  failed.run.error = {code: 'WORKDAY_UNRESOLVED', stage: 'WORKDAY_REPAIR', details: {date: '2026-11-02'}};
+  failed.runHash = hash(failed.run);
+  const file = path.join(input, 'result-workday.json.gz');
+  writeJSON(file, failed);
+  const result = merge({manifestFile: state.file, input, out: path.join(state.dir, 'merged')});
+  assert.deepEqual(result.invalid, [fixture.sampleId]);
+  assert.deepEqual(result.unknownStatuses, []);
+  const invalid = record(fixture, state.identity, 'two', 'VALID');
+  const stage = {measure: {}, audit: {coverage: [], pairing: []}};
+  Object.assign(invalid.run, {initial: stage, repaired: stage, workdayRepaired: stage, final: stage,
+    weekdayWorkdays: {schema: 'weekday-workdays-v2', workdayRepaired: [], final: [{date: '2026-11-02', id: 'FT001'}]}});
+  invalid.runHash = hash(invalid.run);
+  writeJSON(path.join(input, 'result-invalid.json.gz'), invalid);
+  assert.throws(() => merge({manifestFile: state.file, input, out: path.join(state.dir, 'invalid')}), /Missing or failing successful audit/);
+});
+
 test('EX05: coordinated negative cases accept only their designated Saturday conflict', t => {
   const state = setup(t), input = path.join(state.dir, 'input');
   const fixtures = state.manifest.fixtures.filter(f => f.scenario.expectedConflict).slice(0, 2);

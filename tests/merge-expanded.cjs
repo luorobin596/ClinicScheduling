@@ -16,12 +16,15 @@ function compact(run) {
   delete copy.diagnosticRoster;
   // Preserve individual metrics, weekly targets, scores, audit conclusions and stops;
   // full candidate history and rosters remain in each compressed original record.
-  for (const stage of ['initial', 'repaired', 'final']) if (run[stage]) {
+  for (const stage of ['initial', 'repaired', 'workdayRepaired', 'final']) if (run[stage]) {
     const value = run[stage];
     copy[stage] = {measure: value.measure, weekly: value.weekly, audit: {
       coverage: value.audit.coverage, pairing: value.audit.pairing
     }, report: value.report ? {evaluated: value.report.evaluated, accepted: value.report.accepted,
-      elapsedMs: value.report.elapsedMs, stopReason: value.report.stopReason} : undefined};
+      elapsedMs: value.report.elapsedMs, stopReason: value.report.stopReason,
+      transfersAccepted: value.report.transfersAccepted, swapsAccepted: value.report.swapsAccepted,
+      additionsAccepted: value.report.additionsAccepted,
+      moveRefillEvaluated: value.report.moveRefillEvaluated, moveRefillAccepted: value.report.moveRefillAccepted} : undefined};
   }
   return copy;
 }
@@ -44,7 +47,9 @@ function merge({manifestFile, input, out}) {
     if (record.schema !== 'expanded-result-v1' || record.runHash !== hash(run) || !fixture || fixture.inputHash !== run.inputHash) throw new Error(`Unexpected/modified sample: ${file}`);
     if (run.month !== fixture.month || run.group !== fixture.group || run.mode !== fixture.mode ||
       hash(run.scenario) !== hash(fixture.scenario)) throw new Error(`Result stratum mismatch: ${file}`);
-    if (run.status === 'VALID' && (!run.initial || !run.repaired || !run.final || !run.final.audit ||
+    if (run.status === 'VALID' && (!run.initial || !run.repaired || !run.workdayRepaired || !run.final || !run.final.audit ||
+      run.weekdayWorkdays?.schema !== 'weekday-workdays-v2' || !Array.isArray(run.weekdayWorkdays.final) ||
+      run.weekdayWorkdays.final.length || !Array.isArray(run.weekdayWorkdays.workdayRepaired) || run.weekdayWorkdays.workdayRepaired.length ||
       run.final.audit.coverage.length || run.final.audit.pairing.some(d => d.actualAB !== d.maxAB))) throw new Error(`Missing or failing successful audit: ${file}`);
     if (run.status === 'EXPECTED_CONFLICT' && (!run.negativeProbe || run.negativeProbe.code !== 'INPUT_CONFLICT' ||
       run.negativeProbe.details.date !== fixture.scenario.saturday)) throw new Error(`Missing expected conflict proof: ${file}`);
@@ -74,11 +79,11 @@ function merge({manifestFile, input, out}) {
     if (!groups[key]) groups[key] = {count: 0, statuses: {}};
     groups[key].count++;
     groups[key].statuses[run.status] = (groups[key].statuses[run.status] || 0) + 1;
-    if (['ERROR', 'SEARCH_LIMIT', 'COVERAGE_UNRESOLVED'].includes(run.status)) invalid.push(id);
+    if (['ERROR', 'SEARCH_LIMIT', 'COVERAGE_UNRESOLVED', 'WORKDAY_UNRESOLVED'].includes(run.status)) invalid.push(id);
     if (manifest.inputPolicy === 'COORDINATED_ORIGINAL_INTENT_V2' && !fixture.scenario.expectedConflict && run.status === 'INPUT_CONFLICT') invalid.push(id);
     if (manifest.inputPolicy === 'COORDINATED_ORIGINAL_INTENT_V2' && fixture.scenario.expectedConflict &&
       run.status === 'EXPECTED_CONFLICT' && run.error?.details?.date !== fixture.scenario.saturday) invalid.push(id);
-    if (!['VALID', 'INPUT_CONFLICT', 'EXPECTED_CONFLICT', 'ERROR', 'SEARCH_LIMIT', 'COVERAGE_UNRESOLVED'].includes(run.status)) unknownStatuses.push(id);
+    if (!['VALID', 'INPUT_CONFLICT', 'EXPECTED_CONFLICT', 'ERROR', 'SEARCH_LIMIT', 'COVERAGE_UNRESOLVED', 'WORKDAY_UNRESOLVED'].includes(run.status)) unknownStatuses.push(id);
     if ((run.scenario.expectedConflict && run.status !== 'EXPECTED_CONFLICT') ||
       (!run.scenario.expectedConflict && run.status === 'EXPECTED_CONFLICT')) invalid.push(id);
     fs.appendFileSync(temporary, zlib.gzipSync(JSON.stringify(compact(run)) + '\n'));

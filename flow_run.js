@@ -89,6 +89,13 @@ var CoreSystem = {
         const context = SchedulingEngine.generateSchedule(runId);
         stage = 'FRONTEND_EXPORT';
         exportScheduleToFrontend(context.runIdStr);
+        // Notification failure must not roll back a successfully exported roster.
+        try {
+          ScheduleReport.send(context);
+        } catch (mailError) {
+          console.error('排班報告未寄出', JSON.stringify({runId: runId, message: mailError.message}));
+          return "⚠️ 排班已完成並更新班表，但報告信未寄出，請檢查 ADMIN_EMAIL 與寄信執行紀錄。";
+        }
         return "✅ 執行成功！已完成排班並更新班表。";
       } catch (error) {
         const original = schedulingErrorDetails_(error);

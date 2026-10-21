@@ -78,16 +78,18 @@ function failureTables(runs) {
   return lines;
 }
 function weekdayGapTables(runs) {
-  const audited = runs.filter(run => run.weekdayWorkdays?.schema === 'weekday-workdays-v1' &&
+  const audited = runs.filter(run => ['weekday-workdays-v1', 'weekday-workdays-v2'].includes(run.weekdayWorkdays?.schema) &&
     Array.isArray(run.weekdayWorkdays.final));
   const gaps = audited.flatMap(run => run.weekdayWorkdays.final.map(gap => ({sampleId: run.sampleId, seed: run.seed, ...gap})));
   const statistics = {auditedSamples: audited.length, unauditedSamples: runs.length - audited.length,
+    requiredWorkdaySamples: audited.filter(run => run.weekdayWorkdays.schema === 'weekday-workdays-v2').length,
     gapCount: audited.length ? gaps.length : null,
     affectedSamples: audited.length ? audited.filter(run => run.weekdayWorkdays.final.length).length : null,
     staff: [], gaps};
   const lines = ['### 最終平日未請假整天空班', '',
     `成功樣本 ${runs.length} 組；已稽核 ${audited.length} 組；未稽核 ${statistics.unauditedSamples} 組。最終空班總筆數：${statistics.gapCount ?? 'N/A'}；涉及樣本數：${statistics.affectedSamples ?? 'N/A'}。`, '',
-    '只計週一至五營業日、原意願非全天休且骨科與小兒皆無班。週六輪空不計。平均分母為該員工已稽核的成功月樣本；舊紀錄缺少稽核資料時標示未稽核，不當作零筆。INITIAL／REPAIR 表示最終仍存在的既有空班來源；FAIRNESS 表示違反工作日保護，應列為異常而非合格班表。', '',
+    `採用全體工作日修補規則（v2）的成功樣本 ${statistics.requiredWorkdaySamples} 組，最終此類空班必須為零。其餘已稽核樣本沿用舊版 v1 語義，只保護原本有班的工作日。`, '',
+    '只計週一至五營業日、原意願非全天休且骨科與小兒皆無班。週六輪空不計。平均分母為該員工已稽核的成功月樣本；舊紀錄缺少稽核資料時標示未稽核，不當作零筆。INITIAL／REPAIR／WORKDAY_REPAIR／FAIRNESS 為診斷來源，v2 任一來源的最終空班都不能列為合格班表。', '',
     '| 員工 | 已稽核月樣本 n | 平均月空班日數 |', '|---|---:|---:|'];
   for (const id of STAFF.map(s => s.id)) {
     const selected = audited.filter(run => run.final.measure.staff.some(s => s.id === id));
@@ -180,7 +182,7 @@ async function summarize(directory) {
   const metadata = readJSON(path.join(directory, 'merged.json')), groups = new Map(), allSuccessful = [], failures = [];
   for await (const run of readRuns(directory)) {
     const key = `${run.month}/${run.group}/${run.mode}`;
-    if (!groups.has(key)) groups.set(key, {statuses: {}, elapsed: [], successful: [], failures: [], stageMetrics: {initial: {}, repaired: {}, final: {}}});
+    if (!groups.has(key)) groups.set(key, {statuses: {}, elapsed: [], successful: [], failures: [], stageMetrics: {initial: {}, repaired: {}, workdayRepaired: {}, final: {}}});
     const group = groups.get(key);
     group.statuses[run.status] = (group.statuses[run.status] || 0) + 1;
     group.elapsed.push(run.elapsedMs);
@@ -188,7 +190,7 @@ async function summarize(directory) {
       group.successful.push(run);
       allSuccessful.push(run);
       // Retain machine-readable phase diagnostics; visible tables use final only.
-      for (const stage of ['initial', 'repaired', 'final']) for (const [metric, value] of Object.entries(metrics(run[stage].measure))) {
+      for (const stage of ['initial', 'repaired', 'workdayRepaired', 'final']) if (run[stage]) for (const [metric, value] of Object.entries(metrics(run[stage].measure))) {
         (group.stageMetrics[stage][metric] ||= []).push(value);
       }
     } else { group.failures.push(run); failures.push(run); }
@@ -213,7 +215,7 @@ async function summarize(directory) {
     const detail = [`# ${key}`, '', `狀態：${JSON.stringify(group.statuses)}；最終公平性分母：${group.successful.length}。`, '',
       ...READING_GUIDE, '## 最終人員差距平均', '', '| 指標 | 平均 |', '|---|---:|'];
     const stages = {};
-    for (const stage of ['initial', 'repaired', 'final']) {
+    for (const stage of ['initial', 'repaired', 'workdayRepaired', 'final']) {
       stages[stage] = Object.fromEntries(Object.entries(group.stageMetrics[stage]).map(([name, values]) => [name, stats(values)]));
     }
     for (const [name, label] of Object.entries(METRICS)) detail.push(`| ${label} | ${average(group.stageMetrics.final[name] || [])} |`);

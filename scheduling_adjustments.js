@@ -71,6 +71,11 @@ var ScheduleAdjustments = {
     if (options.requireMinimumCoverage && this.coverage(context).length) {
       throw ScheduleAssignments.error('COVERAGE_UNRESOLVED', '骨科最低覆蓋未達標', { findings: this.coverage(context) });
     }
+    if (options.requireAllWeekdayWorkdays && this.workdayGaps(context, staff).length) {
+      throw ScheduleAssignments.error('WORKDAY_UNRESOLVED', '平日未請假卻整天空班', {
+        stage: 'WORKDAY_REPAIR', findings: this.workdayGaps(context, staff)
+      });
+    }
     return true;
   },
 
@@ -326,7 +331,100 @@ var ScheduleAdjustments = {
     return result;
   },
 
-  // Capture once after coverage repair. Later candidates share this immutable baseline.
+  workdayGaps: function(context, staff) {
+    const gaps = [];
+    context.days.forEach(day => {
+      if (!day.isOpen || day.dayOfWeek < 1 || day.dayOfWeek > 5) return;
+      staff.forEach(person => {
+        const available = Object.keys(day.slots).some(s => !context.constraints.off[ScheduleAssignments.key(day.date, s, person.id)]);
+        const working = Object.values(day.slots).some(stations => Object.values(stations).some(slot => slot.staff.includes(person.id)));
+        if (available && !working) gaps.push({ date: day.date, id: person.id });
+      });
+    });
+    return gaps;
+  },
+
+  // A workday is a hard requirement above fairness. Preserve covered slots and
+  // other people's workdays; only add a shift after transfers/swaps cannot help.
+  repairWorkdays: function(context, staff, options) {
+    this.validate(context, staff, { requireMinimumCoverage: true });
+    const budget = this.budget(options);
+    const initial = this.workdayGaps(context, staff);
+    let current = context;
+    const accepted = { transfersAccepted: 0, swapsAccepted: 0, additionsAccepted: 0 };
+    while (this.workdayGaps(current, staff).length && !this.exhausted(budget)) {
+      const gaps = this.workdayGaps(current, staff);
+      const gapKeys = new Set(gaps.map(g => JSON.stringify([g.date, g.id])));
+      let best = null;
+      const evaluate = (operations, kind) => {
+        if (this.exhausted(budget)) return;
+        budget.evaluated++;
+        let trial;
+        try { trial = this.apply(current, operations, staff, { requireMinimumCoverage: true }); }
+        catch (error) { if (error.code !== 'INTERNAL_INVALID' && error.code !== 'INPUT_CONFLICT') throw error; return; }
+        const remaining = this.workdayGaps(trial, staff);
+        if (remaining.length >= gaps.length || remaining.some(g => !gapKeys.has(JSON.stringify([g.date, g.id])))) return;
+        const score = ScheduleFairness.measure(trial, staff).score;
+        const comparison = best ? ScheduleFairness.compareScores(score, best.score) : -1;
+        if (!best || remaining.length < best.loss || (remaining.length === best.loss &&
+          (comparison < 0 || (comparison === 0 && operations.length < best.operations)))) {
+          best = { context: trial, loss: remaining.length, score: score, operations: operations.length, kind: kind };
+        }
+      };
+      const donors = this.assignments(current);
+      transferSearch: for (const gap of gaps) {
+        const day = current.days.find(d => d.date === gap.date);
+        for (const donor of donors.filter(d => d.date === gap.date)) {
+          const dailyCount = Object.values(day.slots).reduce((n, stations) => n +
+            Object.values(stations).filter(slot => slot.staff.includes(donor.id)).length, 0);
+          if (dailyCount < 2) continue;
+          const give = Object.assign({}, donor, { id: gap.id });
+          evaluate([{ remove: donor, add: give, source: 'WORKDAY_REPAIR' }], 'transfersAccepted');
+          // Two-slot personnel swaps can also balance hours and patterns across dates.
+          for (const other of donors.filter(d => d.id === gap.id && d.date !== gap.date)) {
+            if (this.exhausted(budget)) break transferSearch;
+            evaluate([
+              { remove: donor, add: give, source: 'WORKDAY_REPAIR' },
+              { remove: other, add: Object.assign({}, other, { id: donor.id }), source: 'WORKDAY_REPAIR' }
+            ], 'swapsAccepted');
+          }
+          if (this.exhausted(budget)) break transferSearch;
+        }
+      }
+      if (!best && !this.exhausted(budget)) {
+        addSearch: for (const gap of gaps) {
+          const day = current.days.find(d => d.date === gap.date);
+          for (const shift of Object.keys(day.slots)) {
+            if (this.exhausted(budget)) break addSearch;
+            evaluate([{ add: { date: gap.date, shift: shift, station: 'ORTHO', id: gap.id }, source: 'WORKDAY_REPAIR' }], 'additionsAccepted');
+          }
+        }
+      }
+      if (!best) break;
+      current = best.context;
+      budget.accepted++;
+      accepted[best.kind]++;
+    }
+    const remaining = this.workdayGaps(current, staff);
+    const report = Object.assign(this.report(budget, initial, remaining), accepted);
+    if (remaining.length) throw ScheduleAssignments.error(budget.stop ? 'SEARCH_LIMIT' : 'WORKDAY_UNRESOLVED',
+      '未能完成個人平日工作日修補（有限搜尋不代表無解）', {
+        stage: 'WORKDAY_REPAIR', findings: remaining, report: report,
+        blockers: remaining.map(gap => {
+          const day = current.days.find(d => d.date === gap.date);
+          return { date: gap.date, id: gap.id, slots: Object.keys(day.slots).map(shift => ({
+            shift: shift, off: !!current.constraints.off[ScheduleAssignments.key(gap.date, shift, gap.id)],
+            count: day.slots[shift].ORTHO.staff.length, limit: RulesConfig.SHIFTS.WEEKDAY[shift].req_total,
+            movableIds: this.assignments(current, gap.date).filter(d => d.shift === shift).map(d => d.id)
+          })) };
+        }),
+        initialSnapshot: { days: context.days }, bestSnapshot: { days: current.days, history: current.adjustmentHistory }
+      });
+    report.stopReason = 'WORKDAYS_SATISFIED';
+    return { context: current, report: report };
+  },
+
+  // Capture once after workday repair. Later candidates share this immutable baseline.
   protectWeekdayWorkdays: function(context, staff) {
     if (context.weekdayWorkdayBaseline) return context;
     const baseline = [];

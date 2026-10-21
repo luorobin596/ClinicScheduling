@@ -52,6 +52,16 @@ test('WP07 missing workday baseline is rejected before clearing or writing old o
  assert.equal(fake.operations.length,0);
 });
 
+test('WD03 final verification rejects an initial weekday gap even if workday repair was bypassed',()=>{
+ const fixture=require('./fixtures/weekday-workday-repair.cjs')[0];
+ const fake=fakeSheets([['header'],['description'],['2026-09','old preserved record']]);
+ const x=engine(fixture.requests,{final:true,save:true,spreadsheet:fake.spreadsheet,staff:fixture.staff,settings:fixture.settings});
+ x.adjustments.repairWorkdays=context=>({context,report:{}});
+ x.adjustments.improve=(context,people)=>({context:x.adjustments.protectWeekdayWorkdays(context,people),report:{after:x.fairness.measure(context,people)}});
+ assert.throws(()=>x.e.generateSchedule(fixture.month,search),e=>e.code==='WORKDAY_UNRESOLVED'&&e.details.stage==='WORKDAY_REPAIR');
+ assert.equal(fake.operations.length,0);
+});
+
 test('I01 persistence failure reports BACKEND_WRITE and retains old target rows for diagnosis',()=>{
  const oldTarget=['2026-11','2026-11-30','A','OLD_STAFF','','','','',2,'LEGACY','','','ORTHO','system','old timestamp','old note'];
  const fake=fakeSheets([['header'],['description'],['2026-10','other month untouched'],oldTarget]);

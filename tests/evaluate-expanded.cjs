@@ -34,7 +34,7 @@ function evaluate(fixture) {
     inputCoordination: fixture.sampling ? {policy: fixture.sampling.policy, rejectedCount: fixture.sampling.rejectedCount,
       acceptedAttempt: fixture.sampling.acceptedAttempt, candidateSeed: fixture.sampling.candidateSeed,
       rejectionCounts: fixture.sampling.rejectionCounts} : undefined};
-  let stage = 'INITIAL', initial, repaired;
+  let stage = 'INITIAL', initial, repaired, workdayRepaired;
   try {
     if (fixture.scenario.expectedConflict) run.negativeProbe = expectedConflictProbe(fixture);
     const loaded = engine(fixture.requests, {staff: fixture.staff, settings: fixture.settings});
@@ -50,7 +50,7 @@ function evaluate(fixture) {
     auditPeds(initial, fixture);
     const firstAudit = audit(initial, fixture);
     run.initial = {...snapshot(initial), audit: firstAudit};
-    run.weekdayWorkdays = {schema: 'weekday-workdays-v1', initial: weekdayGaps(initial, fixture.staff, fixture.requests)};
+    run.weekdayWorkdays = {schema: 'weekday-workdays-v2', initial: weekdayGaps(initial, fixture.staff, fixture.requests)};
     run.saturday = initial.saturdayAllocationReport;
     const options = {...BUDGET, deadline: Date.now() + BUDGET.timeLimitMs};
     stage = 'REPAIR';
@@ -58,22 +58,29 @@ function evaluate(fixture) {
     run.weekdayWorkdays.repaired = weekdayGaps(repaired.context, fixture.staff, fixture.requests);
     run.repaired = {...snapshot(repaired.context), report: repaired.report,
       audit: audit(repaired.context, fixture, {minimum: true, pedsSnapshot: firstAudit.peds})};
+    stage = 'WORKDAY_REPAIR';
+    workdayRepaired = adjustments.repairWorkdays(repaired.context, fixture.staff, options);
+    run.weekdayWorkdays.workdayRepaired = weekdayGaps(workdayRepaired.context, fixture.staff, fixture.requests);
+    assert.equal(run.weekdayWorkdays.workdayRepaired.length, 0, 'Workday repair left weekday gaps');
+    run.workdayRepaired = {...snapshot(workdayRepaired.context), report: workdayRepaired.report,
+      audit: audit(workdayRepaired.context, fixture, {minimum: true, pedsSnapshot: firstAudit.peds})};
     stage = 'FAIRNESS';
-    const final = adjustments.improve(repaired.context, fixture.staff, options);
+    const final = adjustments.improve(workdayRepaired.context, fixture.staff, options);
     stage = 'AUDIT';
     run.weekdayWorkdays.final = weekdayGaps(final.context, fixture.staff, fixture.requests).map(gap => {
       const same = entry => entry.date === gap.date && entry.id === gap.id;
-      const stageOrigin = !run.weekdayWorkdays.repaired.some(same) ? 'FAIRNESS' :
-        run.weekdayWorkdays.initial.some(same) ? 'INITIAL' : 'REPAIR';
+      const stageOrigin = !run.weekdayWorkdays.workdayRepaired.some(same) ? 'FAIRNESS' :
+        !run.weekdayWorkdays.repaired.some(same) ? 'WORKDAY_REPAIR' : run.weekdayWorkdays.initial.some(same) ? 'INITIAL' : 'REPAIR';
       return {...gap, stageOrigin};
     });
-    assertWeekdayWorkdays(repaired.context, final.context, fixture.staff);
-    adjustments.validate(final.context, fixture.staff, {requireMinimumCoverage: true, requireWeekdayWorkdays: true});
+    assertWeekdayWorkdays(workdayRepaired.context, final.context, fixture.staff);
+    assert.equal(run.weekdayWorkdays.final.length, 0, 'Final roster has an available weekday without work');
+    adjustments.validate(final.context, fixture.staff, {requireMinimumCoverage: true, requireWeekdayWorkdays: true, requireAllWeekdayWorkdays: true});
     const finalAudit = audit(final.context, fixture, {minimum: true, pedsSnapshot: firstAudit.peds});
-    assert.ok(fairness.compareScores(final.report.after.score, run.repaired.measure.score) <= 0);
+    assert.ok(fairness.compareScores(final.report.after.score, run.workdayRepaired.measure.score) <= 0);
     for (const [i, day] of final.context.days.entries()) {
       for (const [shift, slots] of Object.entries(day.slots)) for (const station of ['ORTHO', 'PEDS']) {
-        assert.equal(slots[station].staff.length, repaired.context.days[i].slots[shift][station].staff.length);
+        assert.equal(slots[station].staff.length, workdayRepaired.context.days[i].slots[shift][station].staff.length);
       }
     }
     run.final = {...snapshot(final.context), report: final.report, audit: finalAudit};
@@ -86,8 +93,9 @@ function evaluate(fixture) {
       run.status = fixture.scenario.expectedConflict && run.negativeProbe ? 'EXPECTED_CONFLICT' : 'INPUT_CONFLICT';
     } else if (error.code === 'SEARCH_LIMIT') run.status = 'SEARCH_LIMIT';
     else if (error.code === 'COVERAGE_UNRESOLVED') run.status = 'COVERAGE_UNRESOLVED';
+    else if (error.code === 'WORKDAY_UNRESOLVED') run.status = 'WORKDAY_UNRESOLVED';
     else run.status = 'ERROR';
-    if (initial) run.diagnosticRoster = JSON.parse(JSON.stringify((repaired ? repaired.context : initial).days));
+    if (initial) run.diagnosticRoster = JSON.parse(JSON.stringify((workdayRepaired ? workdayRepaired.context : repaired ? repaired.context : initial).days));
   }
   run.elapsedMs = Date.now() - start;
   return run;

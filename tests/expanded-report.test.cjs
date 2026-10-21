@@ -74,6 +74,12 @@ test('WP08 final-only gap report distinguishes audited zeros, old records and or
   assert.doesNotMatch(text, /→/);
   assert.equal(weekdayGapTables([run('old', null)]).statistics.gapCount, null);
   assert.match(weekdayGapTables([]).lines.join('\n'), /N\/A/);
+  const current = run('v2', []);
+  current.weekdayWorkdays.schema = 'weekday-workdays-v2';
+  const currentReport = weekdayGapTables([current]);
+  assert.equal(currentReport.statistics.requiredWorkdaySamples, 1);
+  assert.equal(currentReport.statistics.gapCount, 0);
+  assert.match(currentReport.lines.join('\n'), /v2/);
 });
 
 test('EX04: combined statistics weight successful months and weeks, separating every short-week length', () => {

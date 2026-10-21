@@ -1,5 +1,16 @@
 # 可驗證的小型任務：來源 → 覆蓋 → 公平性
 
+## 最新完成：個人工作日修補 WD01～WD05（2026-10-21）
+
+詳細可驗證任務及檔案邊界見 [weekday-workday-repair-spec.md](weekday-workday-repair-spec.md)。
+
+- [x] WD01：保存 11/30、9/29 原始意願及兩步交換案例，重現並修復空班。
+- [x] WD02：優先轉移／交換，不新增別人的空班，無候選才新增；固定班、小兒與每班上限不變。
+- [x] WD03：新錯誤 WORKDAY_UNRESOLVED、到限診斷、共享期限與儲存前驗證；失敗不先清空舊輸出。
+- [x] WD04：evaluator／independent audit／merge 接入 v2；公平性以工作日修補後為基準；舊 v1 報告保持舊語義。
+- [x] WD05：全套 197／197 通過，61 組定點修補空班 70→0，含原本最終保留的 65 筆。
+- [ ] VX02：新版雲端 200 組前導、Usage 回報與正式批綁定。未推送或遠端執行。
+
 ## 改善實作：兩個排班缺口（2026-10-21）
 
 2026-10-21 經使用者授權實作。CR01～CR02、WP01～WP04、VX01 已完成本機驗證，全套 188／188 通過；VX02 雲端驗收待執行，未推送／部署／啟動大量模擬。規格為 coverage-move-refill-spec.md 與 weekday-workday-preservation-spec.md；順序 CR01→CR02，WP01→WP02→WP03→WP04，兩線完成後 VX01→VX02。共享模組採循序修改。

@@ -1,6 +1,6 @@
 # 擴大測試工具操作說明
 
-最新狀態（2026-10-21）：兩個正式引擎缺口已在本機修復，全套測試 188／188 通過；尚未執行新版雲端前導或正式模擬。既有 400／5,000 組報告保留。下方原始操作命令仍供後續手動執行；本輪新版驗證要求見本文末節。原擴大測試規格見 [expanded-simulation-spec.md](../tasks/expanded-simulation-spec.md)。
+最新狀態（2026-10-21）：個人平日工作日修補已接入，全套測試 197／197 通過；尚未執行新版雲端前導或正式模擬。既有 400／5,000 組報告保留。下方原始操作命令仍供後續手動執行；本輪新版驗證要求見本文末節。原擴大測試規格見 [expanded-simulation-spec.md](../tasks/expanded-simulation-spec.md)。
 
 ## GitHub 網頁操作：由使用者推送與啟動
 
@@ -128,3 +128,12 @@ TZ=Asia/Taipei node tests/evaluate-expanded.cjs --manifest tests/results/expande
 **下次先手動執行新版 200 組前導。** 新引擎及工具 hash 已不同，舊前導 39539952715 不可用於新版正式批。確認新版前導結果及 Usage 後，再更新 formal-test-plan.json 的 pilotRunId／pilotAttempt 與成本審閱資訊；不得略過 workflow 的身分一致性檢查。此輪未更新綁定，也未啟動工作流程。
 
 舊正式 5,000 組報告保持原樣。若後續重跑，逐組沿用原凍結意願並核對 inputHash，不能換樣本迴避失敗；舊結果是否已有空班須另外稽核，不能因為過去列 VALID 就推定沒有。
+
+
+## 個人平日工作日修補（最新）
+
+新版在最低覆蓋修補後新增 repairWorkdays，先移轉／兩步交換，再考慮新增班。原本零班的未請假營業平日也必須補齊；不能用增加非自願單節的代價為理由保留空班。公平性排序不變，以工作日修補完成的班表為分數及各時段人數基準。週六仍沿用輪休。
+
+資料 schema 為 weekday-workdays-v2，含 initial／repaired／workdayRepaired／final 空班清單及 run.workdayRepaired 統計／報告；最終成功空班為零，由獨立原始意願稽核及 merge 再確認。未解為 WORKDAY_UNRESOLVED，預算到限為 SEARCH_LIMIT，均會阻擋前導／正式驗收。舊 v1 結果仍可製作歷史報告，但不代表符合新規則；合併新引擎結果不接受缺少 v2 稽核的 VALID。
+
+本機 197／197 測試通過，針對既有 61 組問題樣本僅重跑初始／兩階段修補，70 筆空班歸零（含舊 final 的 65 筆），未新增班。這不是完整新版 200 組驗收；仍須使用者推送後手動跑前導。前導 39555747462 也早於本次修改，不能綁定新正式批；此輪未更改 workflow 放行條件或前導綁定。
