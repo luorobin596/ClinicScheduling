@@ -14,6 +14,8 @@
 
 prepare 會解析一次 Node 22 的精確版本，其餘工作使用相同版本；全部採 Asia/Taipei 時區及同一 commit。失敗會盡量保存已落檔的資料，最終不合格會讓整個 workflow 顯示失敗；不要只看單個 shard 綠燈。取消或主機被強制終止時，無法保證來得及上傳所有資料。
 
+2026-10-21：三個下載步驟改用 `actions/download-artifact@v7`，其動作執行環境為 Node 24，修正 v6 宣告 Node 20 導致的棄用警告。這與 `setup-node` 設定的排班測試 Node 22 分開；測試版本與抽樣／公平性規則不變。參考 [官方 v7 發行說明](https://github.com/actions/download-artifact/releases/tag/v7.0.0)。此修改不會更新已啟動的 run，也未由助理推送或重跑。
+
 若程式驗證先失敗，200 組前導不會開始；請下載 `pilot-validation-...` 的 tests.log。若前導／合併失敗，請下載 `pilot-shard-...` 或 `pilot-report-...`，保留原失敗證據後再修正。重新執行整輪會產生新的嘗試產物；不與前一次自動混合。
 
 這份 workflow 不會讀取 Google 憑證、不部署 GAS、不修改儲存庫或自動推送。成本計算仍依下方「成本回報與放大門檻」核對執行完成後的實際時間及上傳量；目前未加入自動費率查詢或正式批工作。
