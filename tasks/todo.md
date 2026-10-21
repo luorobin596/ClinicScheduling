@@ -1,5 +1,69 @@
 # 可驗證的小型任務：來源 → 覆蓋 → 公平性
 
+## 改善實作：兩個排班缺口（2026-10-21）
+
+2026-10-21 經使用者授權實作。CR01～CR02、WP01～WP04、VX01 已完成本機驗證，全套 188／188 通過；VX02 雲端驗收待執行，未推送／部署／啟動大量模擬。規格為 coverage-move-refill-spec.md 與 weekday-workday-preservation-spec.md；順序 CR01→CR02，WP01→WP02→WP03→WP04，兩線完成後 VX01→VX02。共享模組採循序修改。
+
+### CR01：凍結覆蓋失敗回歸案例（小，2 檔）
+
+- [x] 從正式 manifest 保存 2026-11_random_half_0017 的原始意願與設定；建立精簡、無外部服務依賴的 fixture。
+- 驗收：測試能以舊版穩定重現 NO_IMPROVEMENT；另證明兩操作完整結果可通過現有硬限制；新版成功斷言在修復前為紅燈。
+- 檔案：tests/fixtures/coverage-move-refill.cjs、tests/coverage-move-refill.test.cjs。
+- 驗證：`TZ=Asia/Taipei node --test tests/coverage-move-refill.test.cjs`。
+
+### CR02：加入同日移班並補回候選（中，2～3 檔；依賴 CR01）
+
+- [x] 純移班／交換無改善後、直接新增之前搜尋原子兩操作組合，沿用預算與來源紀錄。
+- 驗收：CR01～CR06 通過；固定／小兒／off 不變，非時間截斷下穩定；舊覆蓋案例無回歸。
+- 檔案：scheduling_adjustments.js、tests/coverage-move-refill.test.cjs、tests/coverage-repair.test.cjs（必要時）。
+- 驗證：`TZ=Asia/Taipei node --test tests/coverage-move-refill.test.cjs tests/coverage-repair.test.cjs`。
+
+檢查點 CR：原失敗輸入完整排班成功；檢查原始 context 不變及 adjustmentHistory 兩操作來源正確。
+
+### WP01：重現未請假整天空班（小，2 檔）
+
+- [x] 保存使用者五人 off/fixed 意願，排除 submitted_at／notes 等無關資料；建立 11/12、11/20 交換回歸。
+- 驗收：原版三階段定位初始／修補無空班、fairness 新增 FT001 11/20 空班；新版禁止該交換的測試先失敗。
+- 檔案：tests/fixtures/weekday-workday-preservation.cjs、tests/weekday-workday-preservation.test.cjs。
+- 驗證：`TZ=Asia/Taipei node --test tests/weekday-workday-preservation.test.cjs`。
+
+### WP02：工作日基準、候選及儲存前保護（中，3～4 檔；依賴 WP01）
+
+- [x] 修補後建立固定基準，improve 所有候選及儲存前共同遵守；不改公平性向量。
+- 驗收：WP01～WP07 通過；同日改班、小兒仍有班不誤擋；週六不套平日規則；基準不隨調整縮小。
+- 檔案：scheduling_adjustments.js、scheduling_engine.js、tests/weekday-workday-preservation.test.cjs、tests/fairness-adjustment.test.cjs（必要時）。
+- 驗證：`TZ=Asia/Taipei node --test tests/weekday-workday-preservation.test.cjs tests/fairness-adjustment.test.cjs`。
+
+檢查點 WP：完整使用者意願通過最後驗證，公平性階段沒有新增平日空班；不能只驗證單一硬編碼候選。
+
+### WP03：獨立稽核與分階段診斷（中，3 檔；依賴 WP02）
+
+- [x] evaluator 保存各階段空班清單；independent audit 用 repaired 快照抓 final 工作日遺失。
+- 驗收：刻意注入錯誤空班必被識別為非 VALID；原休假、休診日與週六不誤報；不依賴正式保護函式得出預期。
+- 檔案：tests/support/expanded-audit.cjs、tests/evaluate-expanded.cjs、tests/weekday-workday-preservation.test.cjs。
+- 驗證：`TZ=Asia/Taipei node --test tests/weekday-workday-preservation.test.cjs`。
+
+### WP04：final-only 空班報表（中，2～3 檔；依賴 WP03）
+
+- [x] 綜合與分層報告加最終空班筆數、涉及樣本數、各員工平均及來源明細；歷史資料缺欄位顯示未稽核，不當零筆。
+- 驗收：WP08 通過；原月／週／週六表保留，無前後箭頭，平均分母為成功樣本，零樣本 N/A。
+- 檔案：tests/summarize-expanded.cjs、tests/expanded-report.test.cjs、tests/support/expanded-io.cjs（只在結果契約需要時）。
+- 驗證：`TZ=Asia/Taipei node --test tests/expanded-report.test.cjs`。
+
+### VX01：整合回歸與規格追蹤（中，最多 4 檔；依賴 CR02、WP04）
+
+- [x] 跑兩個凍結案例、全套單元／整合測試，檢查原限制、來源與失敗還原；記錄新工具／引擎 hash。
+- 驗收：原覆蓋失敗修好、使用者案例無新增空班、負向及週六配對規則不退步；不修改歷史報告來宣稱修復。
+- 檔案：tests/coverage-move-refill.test.cjs、tests/weekday-workday-preservation.test.cjs、tasks/plan.md、tasks/todo.md。
+- 驗證：`TZ=Asia/Taipei node --test tests/*.test.cjs`、`git diff --check`。
+
+### VX02：新版雲端驗收與正式規模決策（小，最多 4 檔；依賴 VX01）
+
+- [ ] 新版 200 組前導先行，回報耗時與新證據；若使用者選擇正式重跑，再更新前導 run 綁定。
+- 驗收：不能拿舊 hash 前導證據替新引擎放行；正式重跑逐組沿用原 5,000 意願並提供 inputHash 一致性證據，缺組及錯誤不隱藏。
+- 檔案：tests/EXPANDED_TESTING.md、.github/formal-test-plan.json、.github/workflows/formal-simulation-5000.yml、tasks/todo.md（按實際需要）。
+- 驗證：檢查 GitHub Actions 200 組產物及 Usage；正式批仍由使用者推送／手動啟動，不在實作時自動啟動 5,000 組。
+
 ## 待審新增任務：擴大測試 EX01～EX07（2026-10-20）
 
 規格：[expanded-simulation-spec.md](expanded-simulation-spec.md)。2026-10-20 已依授權編寫 EX01～EX05 與 EX06 成本估算工具，並新增測試案例；依使用者指示只做語法／差異檢查，沒有執行任何測試、生成樣本或模擬。所有驗收框保留未勾選，程式存在不表示已驗證。實際入口與檔案以 tests/EXPANDED_TESTING.md 為準；2026-10-21 已編寫手動前導 GitHub workflow，未推送／啟動；雲端前導及 EX07 未執行。原有完成項目保留於後文。

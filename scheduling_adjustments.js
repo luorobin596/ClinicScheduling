@@ -18,6 +18,7 @@ var ScheduleAdjustments = {
     ScheduleAssignments.validateMetadata(context);
     const ids = new Set(staff.map(p => p.id));
     const actual = {};
+    const workdays = new Set();
     context.days.forEach(day => {
       const dailyCounts = {};
       Object.entries(day.slots).forEach(([shift, stations]) => {
@@ -34,6 +35,7 @@ var ScheduleAdjustments = {
           }
           sameShift.add(id);
           actual[key] = station;
+          workdays.add(JSON.stringify([day.date, id]));
           dailyCounts[id] = (dailyCounts[id] || 0) + 1;
           if (dailyCounts[id] > 2) throw ScheduleAssignments.error('INTERNAL_INVALID', '每日超過兩班', { date: day.date, id: id });
         }));
@@ -44,6 +46,16 @@ var ScheduleAdjustments = {
     });
     Object.keys(context.constraints.peds).forEach(key => {
       if (actual[key] !== 'PEDS') throw ScheduleAssignments.error('INTERNAL_INVALID', '小兒固定或代班遺失', { key: key });
+    });
+    if (options.requireWeekdayWorkdays && !Array.isArray(context.weekdayWorkdayBaseline)) {
+      throw ScheduleAssignments.error('INTERNAL_INVALID', '缺少公平性工作日基準');
+    }
+    if (context.weekdayWorkdayBaseline) context.weekdayWorkdayBaseline.forEach(entry => {
+      if (!workdays.has(JSON.stringify([entry.date, entry.id]))) {
+        throw ScheduleAssignments.error('INTERNAL_INVALID', '公平性調整遺失平日工作日', {
+          subcode: 'WEEKDAY_WORKDAY_LOST', id: entry.id, date: entry.date, stage: 'FAIRNESS'
+        });
+      }
     });
     if (context.saturdayPairingRules) context.days.forEach(day => {
       if (!day.isOpen || day.dayOfWeek !== 6 || (options.saturdayDates && !options.saturdayDates.includes(day.date))) return;
@@ -176,15 +188,18 @@ var ScheduleAdjustments = {
     this.validate(context, staff, { requireMinimumCoverage: false });
     this.assertFeasible(context, staff);
     const budget = this.budget(options);
+    budget.moveRefillEvaluated = 0;
+    budget.moveRefillAccepted = 0;
     let current = context;
     const initial = this.coverage(context);
     while (this.coverage(current).length && !this.exhausted(budget)) {
       const before = this.coverage(current);
       const loss = this.loss(before);
       let best = null;
-      const evaluate = operations => {
+      const evaluate = (operations, kind) => {
         if (this.exhausted(budget)) return false;
         budget.evaluated++;
+        if (kind === 'MOVE_REFILL') budget.moveRefillEvaluated++;
         let trial;
         try { trial = this.apply(current, operations, staff, { requireMinimumCoverage: false }); }
         catch (error) { if (error.code !== 'INTERNAL_INVALID' && error.code !== 'INPUT_CONFLICT') throw error; return true; }
@@ -193,7 +208,7 @@ var ScheduleAdjustments = {
         if (nextLoss >= loss || !this.preservesCoverage(before, findings)) return true;
         const measure = ScheduleFairness.measure(trial, staff);
         if (!best || nextLoss < best.loss || (nextLoss === best.loss && (ScheduleFairness.compareScores(measure.score, best.score) < 0 || (ScheduleFairness.compareScores(measure.score, best.score) === 0 && operations.length < best.operations)))) {
-          best = { context: trial, loss: nextLoss, score: measure.score, operations: operations.length };
+          best = { context: trial, loss: nextLoss, score: measure.score, operations: operations.length, kind: kind };
         }
         return true;
       };
@@ -252,7 +267,26 @@ var ScheduleAdjustments = {
           if (this.exhausted(budget)) break;
         }
       }
-      // Tier 3: add only after no improving move/exchange exists in the searched space.
+      // Tier 3: atomically move to the gap and refill the released slot with another person.
+      // Neither intermediate state must satisfy coverage; the complete candidate must.
+      if (!best && !this.exhausted(budget)) {
+        moveRefill: for (const finding of problems) {
+          const day = current.days.find(d => d.date === finding.date);
+          const targets = finding.missingShifts.length ? finding.missingShifts : Object.keys(day.slots);
+          for (const target of targets) for (const donor of this.assignments(current, day.date)) {
+            if (donor.shift === target) continue;
+            for (const person of people) {
+              if (this.exhausted(budget)) break moveRefill;
+              if (person.id === donor.id) continue;
+              evaluate([
+                { remove: donor, add: { date: day.date, shift: target, station: 'ORTHO', id: donor.id }, source: 'COVERAGE_REPAIR' },
+                { add: { date: day.date, shift: donor.shift, station: 'ORTHO', id: person.id }, source: 'COVERAGE_REPAIR' }
+              ], 'MOVE_REFILL');
+            }
+          }
+        }
+      }
+      // Tier 4: direct additions after moves, exchanges and move+refill candidates.
       if (!best && !this.exhausted(budget)) {
         for (const finding of problems) {
           const day = current.days.find(d => d.date === finding.date);
@@ -269,9 +303,12 @@ var ScheduleAdjustments = {
       if (!best) break;
       current = best.context;
       budget.accepted++;
+      if (best.kind === 'MOVE_REFILL') budget.moveRefillAccepted++;
     }
     const remaining = this.coverage(current);
     const report = this.report(budget, initial, remaining);
+    report.moveRefillEvaluated = budget.moveRefillEvaluated;
+    report.moveRefillAccepted = budget.moveRefillAccepted;
     if (remaining.length) throw ScheduleAssignments.error(budget.stop ? 'SEARCH_LIMIT' : 'COVERAGE_UNRESOLVED',
       '未能完成骨科最低覆蓋修補（有限搜尋不代表無解）', { stage: 'COVERAGE_REPAIR', report: report, findings: remaining, initialSnapshot: { days: context.days }, bestSnapshot: { days: current.days, history: current.adjustmentHistory } });
     report.stopReason = 'COVERAGE_SATISFIED';
@@ -289,10 +326,25 @@ var ScheduleAdjustments = {
     return result;
   },
 
+  // Capture once after coverage repair. Later candidates share this immutable baseline.
+  protectWeekdayWorkdays: function(context, staff) {
+    if (context.weekdayWorkdayBaseline) return context;
+    const baseline = [];
+    context.days.forEach(day => {
+      if (!day.isOpen || day.dayOfWeek < 1 || day.dayOfWeek > 5) return;
+      staff.forEach(person => {
+        if (Object.values(day.slots).some(stations => Object.values(stations).some(slot => slot.staff.includes(person.id)))) {
+          baseline.push(Object.freeze({ date: day.date, id: person.id }));
+        }
+      });
+    });
+    return Object.assign({}, context, { weekdayWorkdayBaseline: Object.freeze(baseline) });
+  },
+
   improve: function(context, staff, options) {
     this.validate(context, staff, { requireMinimumCoverage: true });
     const budget = this.budget(options);
-    let current = context;
+    let current = this.protectWeekdayWorkdays(context, staff);
     const before = ScheduleFairness.measure(context, staff);
     let measure = before;
     while (!this.exhausted(budget)) {

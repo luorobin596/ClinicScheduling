@@ -1,6 +1,6 @@
 # 擴大測試工具操作說明
 
-2026-10-21：程式、測試案例及手動 GitHub Actions workflow 已編寫，依使用者指示尚未執行測試、產生輸入或跑模擬。以下命令為日後操作說明，不代表已驗證通過。規格見 [expanded-simulation-spec.md](../tasks/expanded-simulation-spec.md)。不修改正式排班引擎；既有 400 組及舊入口保留。
+最新狀態（2026-10-21）：兩個正式引擎缺口已在本機修復，全套測試 188／188 通過；尚未執行新版雲端前導或正式模擬。既有 400／5,000 組報告保留。下方原始操作命令仍供後續手動執行；本輪新版驗證要求見本文末節。原擴大測試規格見 [expanded-simulation-spec.md](../tasks/expanded-simulation-spec.md)。
 
 ## GitHub 網頁操作：由使用者推送與啟動
 
@@ -118,3 +118,13 @@ TZ=Asia/Taipei node tests/evaluate-expanded.cjs --manifest tests/results/expande
 ```
 
 正式入口會要求通過的前導、相同引擎／工具／Node／時區／預算、已產生的成本審閱紀錄及明確規模參數。重新完整執行所選正式樣本，不把前導重複加進案例分母。已提供手動 200 組前導與 5,000 組正式 workflow；助理未遠端上傳或啟動。
+
+## 2026-10-21：兩個缺口修復後的驗證狀態
+
+最低覆蓋新增原子「移班＋補回」候選；公平性調整保留修補後的平日工作日。全套本機測試 188／188 通過，含正式失敗案例與使用者實際意願的回歸。這不等同新版已通過雲端 200／5,000 組。
+
+新增 `weekdayWorkdays` 診斷（schema：weekday-workdays-v1），保留 initial／repaired／final 空班清單；獨立 audit 比對修補後工作日，若 final 遺失則不能列為 VALID。summary 只呈現 final：未請假整天空班總筆數、涉及樣本數、每員工平均月空班日數及日期／員工／來源明細。既有空班與週六輪休分開；歷史結果沒有此欄位時顯示未稽核，不當作零筆。
+
+**下次先手動執行新版 200 組前導。** 新引擎及工具 hash 已不同，舊前導 39539952715 不可用於新版正式批。確認新版前導結果及 Usage 後，再更新 formal-test-plan.json 的 pilotRunId／pilotAttempt 與成本審閱資訊；不得略過 workflow 的身分一致性檢查。此輪未更新綁定，也未啟動工作流程。
+
+舊正式 5,000 組報告保持原樣。若後續重跑，逐組沿用原凍結意願並核對 inputHash，不能換樣本迴避失敗；舊結果是否已有空班須另外稽核，不能因為過去列 VALID 就推定沒有。

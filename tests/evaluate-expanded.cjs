@@ -5,7 +5,7 @@ const crypto = require('node:crypto');
 const assert = require('node:assert/strict');
 const {engine} = require('./support/engine-harness.cjs');
 const {summarizeWeeks} = require('./support/weekly-report.cjs');
-const {audit, auditPeds} = require('./support/expanded-audit.cjs');
+const {audit, auditPeds, weekdayGaps, assertWeekdayWorkdays} = require('./support/expanded-audit.cjs');
 const {hash, argumentsFor, integer, writeJSON, readJSON, loadManifest, contract, BUDGET} = require('./support/expanded-io.cjs');
 
 function expectedConflictProbe(fixture) {
@@ -50,16 +50,25 @@ function evaluate(fixture) {
     auditPeds(initial, fixture);
     const firstAudit = audit(initial, fixture);
     run.initial = {...snapshot(initial), audit: firstAudit};
+    run.weekdayWorkdays = {schema: 'weekday-workdays-v1', initial: weekdayGaps(initial, fixture.staff, fixture.requests)};
     run.saturday = initial.saturdayAllocationReport;
     const options = {...BUDGET, deadline: Date.now() + BUDGET.timeLimitMs};
     stage = 'REPAIR';
     repaired = adjustments.repair(initial, fixture.staff, options);
+    run.weekdayWorkdays.repaired = weekdayGaps(repaired.context, fixture.staff, fixture.requests);
     run.repaired = {...snapshot(repaired.context), report: repaired.report,
       audit: audit(repaired.context, fixture, {minimum: true, pedsSnapshot: firstAudit.peds})};
     stage = 'FAIRNESS';
     const final = adjustments.improve(repaired.context, fixture.staff, options);
     stage = 'AUDIT';
-    adjustments.validate(final.context, fixture.staff, {requireMinimumCoverage: true});
+    run.weekdayWorkdays.final = weekdayGaps(final.context, fixture.staff, fixture.requests).map(gap => {
+      const same = entry => entry.date === gap.date && entry.id === gap.id;
+      const stageOrigin = !run.weekdayWorkdays.repaired.some(same) ? 'FAIRNESS' :
+        run.weekdayWorkdays.initial.some(same) ? 'INITIAL' : 'REPAIR';
+      return {...gap, stageOrigin};
+    });
+    assertWeekdayWorkdays(repaired.context, final.context, fixture.staff);
+    adjustments.validate(final.context, fixture.staff, {requireMinimumCoverage: true, requireWeekdayWorkdays: true});
     const finalAudit = audit(final.context, fixture, {minimum: true, pedsSnapshot: firstAudit.peds});
     assert.ok(fairness.compareScores(final.report.after.score, run.repaired.measure.score) <= 0);
     for (const [i, day] of final.context.days.entries()) {

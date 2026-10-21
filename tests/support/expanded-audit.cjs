@@ -3,6 +3,28 @@ const assert = require('node:assert/strict');
 const {calendar} = require('./expanded-calendar.cjs');
 const {coverageFindings} = require('./daily-coverage.cjs');
 const {auditPairing} = require('./pairing-audit.cjs');
+// Independent raw-intent checks: never use the production baseline or guard helper.
+const hasWork = (day, id) => Object.values(day.slots).some(stations =>
+  Object.values(stations).some(slot => slot.staff.includes(id)));
+const weekday = day => day.isOpen && day.dayOfWeek >= 1 && day.dayOfWeek <= 5;
+function weekdayGaps(context, staff, requests) {
+  const off = new Set(requests.filter(r => r.type === 'off').map(r => JSON.stringify([r.date, r.shift, r.staff_id])));
+  const gaps = [];
+  for (const day of context.days.filter(weekday)) for (const person of staff) {
+    const fullyOff = Object.keys(day.slots).every(s => off.has(JSON.stringify([day.date, s, person.id])));
+    if (!fullyOff && !hasWork(day, person.id)) gaps.push({date: day.date, id: person.id});
+  }
+  return gaps;
+}
+function assertWeekdayWorkdays(reference, candidate, staff) {
+  const days = new Map(candidate.days.map(d => [d.date, d]));
+  for (const day of reference.days.filter(weekday)) for (const person of staff) {
+    if (hasWork(day, person.id)) {
+      assert.ok(days.has(day.date) && hasWork(days.get(day.date), person.id),
+        `Weekday workday lost: ${person.id}/${day.date}`);
+    }
+  }
+}
 function audit(context, fixture, {minimum = false, pedsSnapshot = null} = {}) {
   const cal = calendar(fixture.month);
   assert.equal(context.days.length, cal.days.length);
@@ -59,4 +81,4 @@ function auditPeds(context, fixture) {
     }
   }
 }
-module.exports = {audit, auditPeds};
+module.exports = {audit, auditPeds, weekdayGaps, assertWeekdayWorkdays};

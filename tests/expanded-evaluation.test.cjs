@@ -27,6 +27,11 @@ test('EX03: clean month crosses the real evaluator and independent audit without
   assert.equal(result.status, 'VALID', JSON.stringify(result.error));
   assert.equal(result.final.audit.coverage.length, 0);
   assert.ok(result.final.audit.pairing.every(d => d.actualAB === d.maxAB));
+  assert.equal(result.weekdayWorkdays.schema, 'weekday-workdays-v1');
+  assert.ok(Array.isArray(result.weekdayWorkdays.initial));
+  assert.ok(Array.isArray(result.weekdayWorkdays.repaired));
+  assert.ok(Array.isArray(result.weekdayWorkdays.final));
+  assert.ok(result.weekdayWorkdays.final.every(gap => gap.stageOrigin !== 'FAIRNESS'));
 });
 test('EX04: observed spread statistics preserve tails and exclude N/A', () => {
   assert.deepEqual(stats([null, 0, 1, 2, 100]), {n: 4, mean: 25.75, median: 1.5, p90: 100, p95: 100, min: 0, max: 100});

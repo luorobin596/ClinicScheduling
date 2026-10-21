@@ -23,7 +23,7 @@ var SchedulingEngine = {
       initial: initialStats, coverageRepaired: ScheduleFairness.measure(repaired.context, staff),
       fairnessAdjusted: optimized.report.after, repair: repaired.report, fairness: optimized.report
     };
-    ScheduleAdjustments.validate(result, staff, { requireMinimumCoverage: true });
+    ScheduleAdjustments.validate(result, staff, { requireMinimumCoverage: true, requireWeekdayWorkdays: true });
     this.saveToScheduleOutput(result);
     return result;
   },

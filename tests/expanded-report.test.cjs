@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const zlib = require('node:zlib');
 const {hash, writeJSON} = require('./support/expanded-io.cjs');
-const {summarize, weeklyCell, combinedTables, failureTables} = require('./summarize-expanded.cjs');
+const {summarize, weeklyCell, combinedTables, failureTables, weekdayGapTables} = require('./summarize-expanded.cjs');
 const {estimate} = require('./estimate-expanded-cost.cjs');
 
 test('EX04: reporting uses identical successful denominators and renders zero targets as N/A', async t => {
@@ -43,6 +43,8 @@ test('EX04: reporting uses identical successful denominators and renders zero ta
   assert.match(summary, /2026-11-05/);
   assert.match(summary, /\| FT001 \| 1 \| 0 \| 0.00 \| 0.00 \| N\/A \| 1.00 \| 1.00 \| 0.00 \|/);
   assert.match(summary, /每位員工的最終月平均/);
+  assert.match(summary, /未請假整天空班/);
+  assert.match(summary, /未稽核/);
   assert.match(summary, /\| FT001 \| 0.00 \| 0.00 \| N\/A \| 1.00 \| 0.00 \|/);
   assert.match(summary, /\| FT002 \| 151.20 \| 168.00 \| 90.00% \| 0.00 \| 0.00 \|/);
   assert.match(summary, /\| FT001 \| 1.00 \| 0.00 \| 0.00 \| 0.00 \|/);
@@ -51,6 +53,27 @@ test('EX04: reporting uses identical successful denominators and renders zero ta
     assert.doesNotMatch(text, /初始 → 最終|初步排班 → 調整完成|\| 階段 \|/);
     assert.doesNotMatch(text, /\| initial \||\| repaired \||4.00 → 1.00/);
   }
+});
+
+test('WP08 final-only gap report distinguishes audited zeros, old records and origin with correct denominator', () => {
+  const run = (sampleId, final) => ({sampleId, seed: 7, final: {measure: {staff: [{id: 'FT001'}]}},
+    ...(final === null ? {} : {weekdayWorkdays: {schema: 'weekday-workdays-v1', final}})});
+  const result = weekdayGapTables([
+    run('existing', [{date: '2026-11-02', id: 'FT001', stageOrigin: 'INITIAL'}]),
+    run('zero', []), run('historical', null)
+  ]);
+  assert.equal(result.statistics.auditedSamples, 2);
+  assert.equal(result.statistics.unauditedSamples, 1);
+  assert.equal(result.statistics.gapCount, 1);
+  assert.equal(result.statistics.affectedSamples, 1);
+  assert.equal(result.statistics.staff.find(s => s.id === 'FT001').meanDays, 0.5);
+  const text = result.lines.join('\n');
+  assert.match(text, /INITIAL/);
+  assert.match(text, /existing/);
+  assert.match(text, /未稽核/);
+  assert.doesNotMatch(text, /→/);
+  assert.equal(weekdayGapTables([run('old', null)]).statistics.gapCount, null);
+  assert.match(weekdayGapTables([]).lines.join('\n'), /N\/A/);
 });
 
 test('EX04: combined statistics weight successful months and weeks, separating every short-week length', () => {

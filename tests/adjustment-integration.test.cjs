@@ -44,6 +44,14 @@ test('I01 missing person provenance is rejected before any destructive Sheet ope
  assert.throws(()=>x.e.generateSchedule('2026-11',search),e=>e.code==='INTERNAL_INVALID');assert.equal(fake.operations.length,0);
 });
 
+test('WP07 missing workday baseline is rejected before clearing or writing old output',()=>{
+ const fake=fakeSheets([['header'],['description'],['2026-11','old preserved record']]),x=finalEngine([],fake);
+ const improve=x.adjustments.improve.bind(x.adjustments);
+ x.adjustments.improve=(...args)=>{const result=improve(...args);delete result.context.weekdayWorkdayBaseline;return result;};
+ assert.throws(()=>x.e.generateSchedule('2026-11',search),e=>e.code==='INTERNAL_INVALID'&&/工作日基準/.test(e.message));
+ assert.equal(fake.operations.length,0);
+});
+
 test('I01 persistence failure reports BACKEND_WRITE and retains old target rows for diagnosis',()=>{
  const oldTarget=['2026-11','2026-11-30','A','OLD_STAFF','','','','',2,'LEGACY','','','ORTHO','system','old timestamp','old note'];
  const fake=fakeSheets([['header'],['description'],['2026-10','other month untouched'],oldTarget]);
