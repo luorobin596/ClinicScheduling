@@ -1,0 +1,179 @@
+name: Clinic scheduling - 200-case pilot
+run-name: 200-case pilot by @${{ github.actor }} (attempt ${{ github.run_attempt }})
+
+# Deliberately manual only. Pushing this file does not run any tests.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clinic-scheduling-pilot
+  cancel-in-progress: false
+
+env:
+  TZ: Asia/Taipei
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  prepare:
+    name: Validate code and freeze 200 inputs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      node-version: ${{ steps.runtime.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Record exact Node version for every subsequent job
+        id: runtime
+        run: |
+          node -e 'require("node:fs").appendFileSync(process.env.GITHUB_OUTPUT, `version=${process.versions.node}\n`)'
+          mkdir -p cloud-pilot/validation
+          node --version | tee cloud-pilot/validation/node-version.txt
+          git rev-parse HEAD > cloud-pilot/validation/commit.txt
+      - name: Run existing and new unit/integration checks
+        run: node --test tests/*.test.cjs 2>&1 | tee cloud-pilot/validation/tests.log
+      - name: Freeze the pilot input once, after checks pass
+        run: |
+          node tests/generate-expanded-inputs.cjs --size 200 --out cloud-pilot/inputs/pilot.json.gz
+      - name: Preserve validation evidence even on failure
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: pilot-validation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: cloud-pilot/validation/
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Share the same frozen input with every shard
+        uses: actions/upload-artifact@v6
+        with:
+          name: pilot-input-${{ github.run_id }}-${{ github.run_attempt }}
+          path: cloud-pilot/inputs/pilot.json.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  pilot:
+    name: Pilot shard ${{ matrix.shard }} of 4
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ needs.prepare.outputs.node-version }}
+          package-manager-cache: false
+      - uses: actions/download-artifact@v6
+        with:
+          name: pilot-input-${{ github.run_id }}-${{ github.run_attempt }}
+          path: cloud-pilot/inputs
+      - name: Evaluate exactly 50 frozen cases
+        env:
+          PILOT_SHARD: ${{ matrix.shard }}
+        run: |
+          mkdir -p cloud-pilot/logs
+          node tests/evaluate-expanded.cjs --manifest cloud-pilot/inputs/pilot.json.gz --out cloud-pilot/records --shards 4 --shard "$PILOT_SHARD" 2>&1 | tee "cloud-pilot/logs/shard-$PILOT_SHARD.log"
+      - name: Preserve completed cases and diagnostics even if evaluation fails
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: pilot-shard-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            cloud-pilot/records/
+            cloud-pilot/logs/
+          if-no-files-found: warn
+          retention-days: 7
+          compression-level: 0
+
+  report:
+    name: Merge, audit and publish pilot report
+    needs: [prepare, pilot]
+    # Collect partial evidence if one shard failed. Cancelled runs stop here.
+    if: ${{ !cancelled() && needs.prepare.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ needs.prepare.outputs.node-version }}
+          package-manager-cache: false
+      - uses: actions/download-artifact@v6
+        with:
+          name: pilot-input-${{ github.run_id }}-${{ github.run_attempt }}
+          path: cloud-pilot/inputs
+      - name: Collect every available shard without flattening its directories
+        uses: actions/download-artifact@v6
+        with:
+          pattern: pilot-shard-*-${{ github.run_id }}-${{ github.run_attempt }}
+          path: cloud-pilot/shards
+          merge-multiple: false
+      - name: Merge and check completeness
+        id: merge
+        # A nonzero exit still permits publishing the diagnostic report below.
+        continue-on-error: true
+        run: |
+          mkdir -p cloud-pilot/logs
+          node tests/merge-expanded.cjs --manifest cloud-pilot/inputs/pilot.json.gz --input cloud-pilot/shards --out cloud-pilot/report 2>&1 | tee cloud-pilot/logs/merge.log
+      - name: Write summary and detailed fairness reports
+        if: ${{ !cancelled() && hashFiles('cloud-pilot/report/merged.json') != '' }}
+        run: node tests/summarize-expanded.cjs --input cloud-pilot/report
+      - name: Publish a short summary on the Actions run page
+        if: ${{ !cancelled() }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const file = 'cloud-pilot/report/merged.json';
+          const lines = ['## 200 組前導測試', ''];
+          if (fs.existsSync(file)) {
+            const report = JSON.parse(fs.readFileSync(file, 'utf8'));
+            lines.push(`完整：**${report.completed}**；前導通過：**${report.pilotPassed}**。`, '',
+              `狀態：\`${JSON.stringify(report.statuses)}\``, '',
+              `缺少 ${report.missing.length} 組；待調查 ${report.invalid.length} 組。`);
+          } else {
+            lines.push('無法產生合併報告；請查看 shard 紀錄及 merge.log。');
+          }
+          lines.push('', '下載 pilot-report 產物查看 summary.md、分層報告、凍結輸入及原始紀錄。', '',
+            '成本尚待核對本次完整 job 時間與產物大小；本流程不會啟動 5,000／10,000 組正式測試。', '');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n'));
+          NODE
+      - name: Preserve merged and raw evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: pilot-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: cloud-pilot/
+          if-no-files-found: warn
+          retention-days: 7
+          compression-level: 0
+      - name: Fail the workflow if the pilot did not pass
+        if: ${{ !cancelled() }}
+        env:
+          MERGE_OUTCOME: ${{ steps.merge.outcome }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const file = 'cloud-pilot/report/merged.json';
+          if (process.env.MERGE_OUTCOME !== 'success' || !fs.existsSync(file)) process.exit(1);
+          const report = JSON.parse(fs.readFileSync(file, 'utf8'));
+          if (!report.completed || !report.pilotPassed) process.exit(1);
+          NODE

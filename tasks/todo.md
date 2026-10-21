@@ -2,7 +2,7 @@
 
 ## 待審新增任務：擴大測試 EX01～EX07（2026-10-20）
 
-規格：[expanded-simulation-spec.md](expanded-simulation-spec.md)。2026-10-20 已依授權編寫 EX01～EX05 與 EX06 成本估算工具，並新增測試案例；依使用者指示只做語法／差異檢查，沒有執行任何測試、生成樣本或模擬。所有驗收框保留未勾選，程式存在不表示已驗證。實際入口與檔案以 tests/EXPANDED_TESTING.md 為準；GitHub workflow、雲端前導及 EX07 未執行。原有完成項目保留於後文。
+規格：[expanded-simulation-spec.md](expanded-simulation-spec.md)。2026-10-20 已依授權編寫 EX01～EX05 與 EX06 成本估算工具，並新增測試案例；依使用者指示只做語法／差異檢查，沒有執行任何測試、生成樣本或模擬。所有驗收框保留未勾選，程式存在不表示已驗證。實際入口與檔案以 tests/EXPANDED_TESTING.md 為準；2026-10-21 已編寫手動前導 GitHub workflow，未推送／啟動；雲端前導及 EX07 未執行。原有完成項目保留於後文。
 
 ### EX01：月份與休診日曆（小，1～2 檔）
 

@@ -1,6 +1,22 @@
 # 擴大測試工具操作說明
 
-2026-10-20：程式與測試案例已編寫，依使用者指示尚未執行測試、產生輸入或跑模擬。以下命令為日後操作說明，不代表已驗證通過。規格見 [expanded-simulation-spec.md](../tasks/expanded-simulation-spec.md)。不修改正式排班引擎；既有 400 組及舊入口保留。
+2026-10-21：程式、測試案例及手動 GitHub Actions workflow 已編寫，依使用者指示尚未執行測試、產生輸入或跑模擬。以下命令為日後操作說明，不代表已驗證通過。規格見 [expanded-simulation-spec.md](../tasks/expanded-simulation-spec.md)。不修改正式排班引擎；既有 400 組及舊入口保留。
+
+## GitHub 網頁操作：由使用者推送與啟動
+
+工作流程位於 `.github/workflows/expanded-simulation.yml`，顯示名稱為 **Clinic scheduling - 200-case pilot**。只設定 `workflow_dispatch`，沒有 push／pull_request／排程觸發，推送程式本身不會執行測試，也沒有正式 5,000／10,000 組選項。
+
+1. 將工作流程與測試工具提交並推送到 GitHub 儲存庫的預設分支。此步由使用者自行執行。
+2. 開啟儲存庫 → Actions → Clinic scheduling - 200-case pilot → Run workflow，選擇含完整程式的分支，再手動啟動。
+3. 流程先在 Linux 執行 `node --test tests/*.test.cjs`。這是單元／假服務整合驗證，不會重跑歷史 400 組模擬。通過後才凍結 200 組前導輸入。
+4. 分 4 批各 50 組、同時最多 2 批，然後合併、獨立驗證及產生報告。整個流程同時最多執行一輪，重複手動啟動可能進入等待。
+5. 完成後開啟該次 run，從 Artifacts 下載 `pilot-report-執行編號-嘗試編號`。含 `report/summary.md`、`report/reports/`、`inputs/pilot.json.gz`、`shards/` 原始紀錄及診斷日誌。產物保留 7 天；需長期追溯者請自行下載保存。
+
+prepare 會解析一次 Node 22 的精確版本，其餘工作使用相同版本；全部採 Asia/Taipei 時區及同一 commit。失敗會盡量保存已落檔的資料，最終不合格會讓整個 workflow 顯示失敗；不要只看單個 shard 綠燈。取消或主機被強制終止時，無法保證來得及上傳所有資料。
+
+若程式驗證先失敗，200 組前導不會開始；請下載 `pilot-validation-...` 的 tests.log。若前導／合併失敗，請下載 `pilot-shard-...` 或 `pilot-report-...`，保留原失敗證據後再修正。重新執行整輪會產生新的嘗試產物；不與前一次自動混合。
+
+這份 workflow 不會讀取 Google 憑證、不部署 GAS、不修改儲存庫或自動推送。成本計算仍依下方「成本回報與放大門檻」核對執行完成後的實際時間及上傳量；目前未加入自動費率查詢或正式批工作。
 
 ## 三種規模
 
@@ -69,4 +85,4 @@ node tests/estimate-expanded-cost.cjs --input tests/results/expanded-2026-09-11/
 TZ=Asia/Taipei node tests/evaluate-expanded.cjs --manifest tests/results/expanded-2026-09-11/inputs/formal-5000.json.gz --out tests/results/expanded-2026-09-11/formal-5000-records --shards 50 --shard 0 --confirm-formal-size 5000 --pilot-report tests/results/expanded-2026-09-11/pilot-report
 ```
 
-正式入口會要求通過的前導、相同引擎／工具／Node／時區／預算、已產生的成本報告及明確規模參數。重新完整執行所選正式樣本，不把前導重複加進案例分母。GitHub 儲存庫及 Actions workflow 留待後續設定；目前沒有遠端上傳、自動觸發或正式測試。
+正式入口會要求通過的前導、相同引擎／工具／Node／時區／預算、已產生的成本報告及明確規模參數。重新完整執行所選正式樣本，不把前導重複加進案例分母。已提供手動 200 組前導 workflow，尚未由助理遠端上傳或啟動；正式批 workflow 留待前導與成本回報後再設定。
