@@ -13,7 +13,7 @@ function fixture() {
     PropertiesService:{getScriptProperties:()=>({getProperty:key=>{assert.equal(key, 'ADMIN_EMAIL'); return 'admin@example.com';}})},
     Notify:{sendEmail:(...args) => sent.push(args)}
   }});
-  vm.runInContext(fs.readFileSync('scheduling_report.js', 'utf8'), h.box);
+  vm.runInContext(fs.readFileSync('gas/scheduling_report.js', 'utf8'), h.box);
   const c = h.e.createContext('2026-11');
   c.staffList = staff; c.submittedStaffIds = ['FT001'];
   c.days = c.days.filter(d => ['2026-11-02','2026-11-03','2026-11-07','2026-11-30'].includes(d.date));

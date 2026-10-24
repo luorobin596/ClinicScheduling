@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const configHash = crypto.createHash('sha256').update(fs.readFileSync(path.join(__dirname, '..', 'Config_system.js'))).digest('hex');
+const configHash = crypto.createHash('sha256').update(fs.readFileSync(path.join(__dirname, '..', 'gas', 'Config_system.js'))).digest('hex');
 const kinds = ['baseline', 'full-only', 'mixed', 'week-off'];
 const labels = ['原先同批意願', '五人只休全天', '五人全天／半天混合', '一人連休一週'];
 const reports = kinds.map(k => require(`./results/${k}-evaluation.json`));
