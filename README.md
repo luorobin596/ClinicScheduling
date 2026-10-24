@@ -62,4 +62,10 @@ TZ=Asia/Taipei node --test tests/*.test.cjs
 
 ## 公開準備狀態
 
-PR 自動測試暫緩，現有大型模擬只手動啟動。共同維護與部署約定已記錄於 [CONTRIBUTING.md](CONTRIBUTING.md)；公開資料範圍及 LICENSE 尚待討論；目前檔案與 Git 歷史的敏感資料檢查尚未完成。詳見[待辦](tasks/todo.md)。
+PR 自動測試暫緩，現有大型模擬只手動啟動。共同維護與部署約定已記錄於 [CONTRIBUTING.md](CONTRIBUTING.md)；程式碼採用 [MIT License](LICENSE)，公開資料範圍仍待確認；已完成目前檔案、本機可達 Git 歷史及封存內容的靜態檢查，仍有歷史作者信箱與意願案例等公開範圍待確認，見[檢查紀錄](docs/publication-review.md)。詳見[待辦](tasks/todo.md)。
+
+## 授權
+
+本專案程式碼與隨附文件採用 [MIT License](LICENSE)，允許使用、修改、散布及商用，須保留著作權與授權聲明；軟體依原樣提供，不提供擔保。正式條文見 LICENSE。
+
+此授權不提供診所資料、員工個資、Google 帳號、試算表或正式部署環境的存取權。

@@ -15,7 +15,7 @@ TZ=Asia/Taipei node --test tests/*.test.cjs
 
 純文件變更可檢查連結與差異，並在 PR 註明未執行測試的原因。PR 自動測試尚未啟用；大型模擬維持手動執行，依 [擴大測試說明](tests/EXPANDED_TESTING.md)處理。
 
-需求與問題可先寫 GitHub Issue 或記入 [todo.md](tasks/todo.md)，描述發生情境、預期行為與實際結果。討論確定後再修改規則。範例與回歸案例使用測試資料；公開資料範圍與授權另待確認。
+需求與問題可先寫 GitHub Issue 或記入 [todo.md](tasks/todo.md)，描述發生情境、預期行為與實際結果。討論確定後再修改規則。範例與回歸案例使用測試資料；專案程式碼與隨附文件採用 [MIT License](LICENSE)；公開資料範圍仍待確認。
 
 ## TEST 驗證與正式部署
 
