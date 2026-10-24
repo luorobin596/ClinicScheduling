@@ -1,8 +1,8 @@
 # GitHub 審查與 GAS 手動部署
 
-流程：分支修改 → 本機測試 → commit / push → PR → 另一位維護者核准並合併 main → Robin 更新 main → TEST 驗證 → 正式 clasp push → 更新所需版本／部署 → PR 留存紀錄。
+流程：分支修改 → 本機測試 → commit / push → PR → 另一位維護者核准並合併 main → TEST 驗證 → Robin 更新 main → 正式 clasp push → 更新所需版本／部署 → PR 留存紀錄。
 
-GitHub 為程式碼版本來源。正式同步由 Robin 操作；同仁開發時不需要正式 GAS 的寫入權限。本文件不會自動上傳程式。TEST 與正式環境使用不同 Script ID，請分別使用獨立 checkout，各自保留本機 .clasp.json。
+GitHub 為程式碼版本來源。正式同步由 Robin 操作；同仁開發時不需要正式 GAS 的寫入權限。本文件不會自動上傳程式。同一份 checkout 共用 GAS/，以 .clasp.test.json 與 .clasp.production.json 分別指定 TEST 和正式專案。每次 clasp 操作必須使用 --project 明確選擇環境，不使用預設 .clasp.json。
 
 ## 首次接軌（Robin）
 
@@ -28,13 +28,14 @@ clasp clone-script YOUR_SCRIPT_ID
 
 3. 回到儲存庫，在工作分支將下載的 appsscript.json 複製為 GAS/appsscript.json，保留原本授權範圍、Library／進階服務等設定，確認 V8 與 Asia/Taipei。不要從零猜測 manifest。檢查其中專案資訊是否適合公開；有環境差異時先處理 TEST／正式設定方式再部署。將 manifest、必要的程式差異與本次流程設定一起提交 PR。
 
-4. 在每個部署用 checkout 的根目錄執行：
+4. 在同一個儲存庫根目錄建立兩份本機設定：
 
 ```sh
-cp .clasp.json.example .clasp.json
+cp .clasp.json.example .clasp.test.json
+cp .clasp.json.example .clasp.production.json
 ```
 
-編輯 .clasp.json，將 scriptId 換成該環境的真實 ID，保留 rootDir 為 GAS。此檔已忽略；每台電腦獨立設定。登入憑證 .clasprc.json 也不提交；GAS/appsscript.json 則必須納入 Git 與審查。
+分別編輯兩份設定，填入 TEST 與正式 Script ID，保留 rootDir 為 GAS；兩個 ID 不可相同。實際設定都已忽略，僅 .clasp.json.example 可提交。既有 .clasp.json 應移為 .clasp.production.json，避免省略 --project 時意外使用預設正式目標。登入憑證 .clasprc.json 也不提交；GAS/appsscript.json 則必須納入 Git 與審查。
 
 ## GitHub 一次性設定（儲存庫管理者）
 
@@ -56,32 +57,42 @@ git switch -c codex/describe-your-change
 
 ```sh
 TZ=Asia/Taipei node --test tests/*.test.cjs
-git add gas tests docs README.md CONTRIBUTING.md
+git add GAS tests docs README.md CONTRIBUTING.md
 git diff --cached
 git commit -m "fix: describe the change"
 git push -u origin HEAD
 ```
 
-git add 清單應依實際變更調整，首次接軌也須加入設定範本、忽略規則和部署工具。開 PR、附測試結果、由另一位維護者核准並合併。開發分支可在獨立 TEST 專案驗證，正式專案只同步已合併的版本。
+git add 清單應依實際變更調整，首次接軌也須加入設定範本、忽略規則和部署工具。開 PR、附測試結果、由另一位維護者核准並合併。開發分支可在 TEST 專案驗證，正式專案只同步已合併的版本。
+
+PR 核准前，在同一個根目錄依序執行，每一步成功才進行下一步：
+
+```sh
+TZ=Asia/Taipei node --test tests/*.test.cjs
+node scripts/check-gas-deploy.cjs test
+clasp --project .clasp.test.json push
+```
+
+TEST 檢查允許開發分支與未提交變更。第一次同步前先備份並比較 TEST 專案，確認共用 GAS/appsscript.json 的服務、授權與 Web App 設定適用；核對 TEST 專案自己的 Script Properties 指向測試用試算表及收件人。--project 只選擇程式專案，不會自動替換資料來源，也不會隔離測試資料。TEST 驗證通過後，將驗證過的變更完整提交 PR。
 
 ## 合併後部署（Robin）
 
-先確認 PR 已核准合併，且目前 checkout 的 .clasp.json 對應預期環境：
+先確認 PR 已核准合併，並核對本機 .clasp.production.json 指向正式專案：
 
 ```sh
 git switch main
 git fetch origin
 git pull --ff-only origin main
 TZ=Asia/Taipei node --test tests/*.test.cjs
-node scripts/check-gas-deploy.cjs
+node scripts/check-gas-deploy.cjs production
 ```
 
-以上任一步驟失敗即停止，不繼續 push。確認 clasp 已安裝登入，在 TEST checkout 同步並驗證填寫、截止重試、排班、匯出與寄信；若發現問題，回工作分支修改並走新 PR。
+以上任一步驟失敗即停止，不繼續 push。先確認此次合併內容已在 TEST 驗證填寫、截止重試、排班、匯出與寄信；若有合併後的額外變更，須先以 TEST 設定重驗。若發現問題，回工作分支修改並走新 PR。
 
-正式 checkout 重做以上檢查，核對 Script ID 與完整上傳檔案後，才執行：
+核對正式 Script ID 與完整上傳檔案後，才執行：
 
 ```sh
-clasp push
+clasp --project .clasp.production.json push
 ```
 
 push 更新專案原始碼。固定版本 Web App 或 Library 仍需在 GAS 管理部署／版本，更新既有部署或使用方的 Library 版本，並驗證既有網址、觸發器與外部選單。不能把 push 成功當成正式版本已生效。直接使用專案目前程式的執行方式可能在 push 後立即受到影響。

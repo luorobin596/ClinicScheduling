@@ -19,7 +19,7 @@ TZ=Asia/Taipei node --test tests/*.test.cjs
 
 ## TEST 驗證與正式部署
 
-具體設定與指令見 [GitHub → GAS 部署流程](docs/gas-deployment.md)。採 PR 核准並合併 main 後手動部署；首次須取得既有 manifest、設定本機 `.clasp.json`，並設定 GitHub main 審查規則。部署前執行 `node scripts/check-gas-deploy.cjs`；檢查通過後由 Robin 手動 `clasp push`。
+具體設定與指令見 [GitHub → GAS 部署流程](docs/gas-deployment.md)。採 PR 核准並合併 main 後手動部署；首次須取得既有 manifest、設定本機 `.clasp.test.json` 與 `.clasp.production.json`，並設定 GitHub main 審查規則。部署前執行 `node scripts/check-gas-deploy.cjs production`；檢查通過後由 Robin 手動 `clasp --project .clasp.production.json push`。
 
 同仁可在具備權限的 TEST 環境驗證。需要調整共用 TEST 版本時，先告知另一位維護者使用的分支與 commit，避免互相覆蓋。
 

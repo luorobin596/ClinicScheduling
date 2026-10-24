@@ -52,6 +52,8 @@ service_account*.json
 
 # Local GAS project target and OAuth credentials
 .clasp.json
+.clasp.test.json
+.clasp.production.json
 .clasprc.json
 .clasprc.*.json
 node_modules/
