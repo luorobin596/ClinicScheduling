@@ -6,7 +6,7 @@ function engine(requests = [], options = {}) {
   let requestReads=0;
   const box = vm.createContext({console:{log(){},warn(){},error(){}},Session:{getScriptTimeZone:()=> 'Asia/Taipei'},Utilities:{formatDate:(d,z,p)=>{const v=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:z,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d).map(x=>[x.type,x.value]));return p.replace('yyyy',v.year).replace('MM',v.month).replace('dd',v.day);}},RepoStaff:{getAvailableStaff:()=>staff},RepoRequests:{getAllRequestsByRun:()=>{requestReads++;return Object.assign(requests.slice(), {submittedStaffIds: options.submittedStaffIds === undefined ? staff.map(s=>s.id) : options.submittedStaffIds});}},getDbSpreadsheet:()=>options.spreadsheet,...options.globals});
   for(const file of ['Config_system.js','scheduling_assignments.js','scheduling_fairness.js','scheduling_adjustments.js','scheduling_saturday.js','scheduling_engine.js']){
-    const filename=path.join(__dirname,'..','..','gas',file);
+    const filename=path.join(__dirname,'..','..','GAS',file);
     if(fs.existsSync(filename))vm.runInContext(fs.readFileSync(filename,'utf8'),box,{filename:file});
   }
   box.__settings={closedDates:[],minDaysOff:9,monthlyHours:176,pedsAssignments:{PEDS_PATTERN_1:'FT003',PEDS_PATTERN_2:'FT002'},...options.settings};

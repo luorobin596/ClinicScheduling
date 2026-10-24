@@ -34,7 +34,7 @@ function setup(status = 'FT_WINDOW_OPEN', options = {}) {
     RepoRequests: { saveStaffRequest(runId) { state.lockedAtWrite = state.locked; state.writes.push(runId); } }
   };
   vm.createContext(sandbox);
-  for (const file of ['flow_run.js', 'web_entry.js']) vm.runInContext(fs.readFileSync('gas/' + file, 'utf8'), sandbox);
+  for (const file of ['flows_run.js', 'web_entry.js']) vm.runInContext(fs.readFileSync('GAS/' + file, 'utf8'), sandbox);
   return { state, sandbox };
 }
 
@@ -110,7 +110,7 @@ function repositorySetup() {
   };
   const sandbox = { Date, console: { error() {} }, CONFIG: { SHEET_NAMES: { RUN_CONTROL: 'Run_Control' } }, getDbSpreadsheet: () => ({ getSheetByName: () => sheet }), Session: { getScriptTimeZone: () => 'Asia/Taipei' }, Utilities: { formatDate: d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` } };
   vm.createContext(sandbox);
-  for (const file of ['flow_run.js', 'repo_core.js']) vm.runInContext(fs.readFileSync('gas/' + file, 'utf8'), sandbox);
+  for (const file of ['flows_run.js', 'repo_core.js']) vm.runInContext(fs.readFileSync('GAS/' + file, 'utf8'), sandbox);
   return { rows, repo: vm.runInContext('RepoCore', sandbox) };
 }
 test('actual repository restores only matching Date runId and preserves cutoff', () => {

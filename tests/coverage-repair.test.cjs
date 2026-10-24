@@ -7,7 +7,7 @@ const {toRequests}=require('./support/leave-model.cjs');
 function fixture(events=[],ids=['FT001','FT002']) {
  const staff=ids.map(id=>({id,name:id})),requests=toRequests(events);
  const box=vm.createContext({console:{log(){},warn(){}},Session:{getScriptTimeZone:()=> 'Asia/Taipei'},Utilities:{formatDate:(d,z,p)=>p.replace('yyyy',d.getFullYear()).replace('MM',String(d.getMonth()+1).padStart(2,'0')).replace('dd',String(d.getDate()).padStart(2,'0'))},RepoStaff:{getAvailableStaff:()=>staff},RepoRequests:{getAllRequestsByRun:()=>requests}});
- for(const f of ['Config_system.js','scheduling_assignments.js','scheduling_fairness.js','scheduling_adjustments.js','scheduling_engine.js'])if(fs.existsSync(path.join(__dirname,'..','gas',f)))vm.runInContext(fs.readFileSync(path.join(__dirname,'..','gas',f),'utf8'),box);
+ for(const f of ['Config_system.js','scheduling_assignments.js','scheduling_fairness.js','scheduling_adjustments.js','scheduling_engine.js'])if(fs.existsSync(path.join(__dirname,'..','GAS',f)))vm.runInContext(fs.readFileSync(path.join(__dirname,'..','GAS',f),'utf8'),box);
  vm.runInContext("RulesConfig.loadDynamicConfig=()=>({closedDates:[],minDaysOff:9,monthlyHours:176,pedsAssignments:{}})",box);
  const context=box.SchedulingEngine.createContext('2026-11');context.submittedStaffIds=staff.map(s=>s.id);box.SchedulingEngine._fillFixedShifts(context,{},requests);
  const add=(date,shift,id,station='ORTHO')=>box.ScheduleAssignments.add(context.days.find(d=>d.date===date),shift,station,id,'AUTO_TEST',station==='PEDS'?'PEDS':'AUTO',station==='PEDS'?['PEDS']:[]);

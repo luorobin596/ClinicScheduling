@@ -6,7 +6,7 @@
 
 - 了解排班規則與設計：[規格索引](tasks/README.md)。
 - 修改程式與本機驗證：[測試說明](tests/README.md)。
-- 共同修改與部署：[貢獻指南](CONTRIBUTING.md)。
+- 共同修改與部署：[貢獻指南](CONTRIBUTING.md)與 [GitHub → GAS 部署流程](docs/gas-deployment.md)。
 - 查詢尚未完成的工作：[待辦事項](tasks/todo.md)。
 - 查詢歷次模擬：[歷史報告](tests/results/summary.md)及[原始結果封存](tests/results/archive/README.md)。歷史報告不是目前版本通過驗收的證明。
 
@@ -22,13 +22,13 @@ TZ=Asia/Taipei node --test tests/*.test.cjs
 
 ## 程式結構
 
-Google Apps Script 的 JavaScript 與 HTML 統一放在 [`gas/`](gas/)；下表程式檔名皆相對於此資料夾。測試與文件保留在專案根目錄的各自資料夾。
+Google Apps Script 的 JavaScript 與 HTML 統一放在 [`GAS/`](GAS/)；下表程式檔名皆相對於此資料夾。測試與文件保留在專案根目錄的各自資料夾。
 
 | 檔案 | 用途 |
 |---|---|
 | `Config_system.js` | Script Properties、工作表名稱、班別與動態設定 |
 | `web_entry.js`、`FT_Portal.html` | 正職意願填寫 Web App |
-| `flow_run.js` | 月份任務、開放／關閉填寫與截止後排班流程 |
+| `flows_run.js` | 月份任務、開放／關閉填寫與截止後排班流程 |
 | `repo_*.js` | 員工、意願、任務及試算表讀寫／匯出 |
 | `scheduling_engine.js` | 排班流程與初始分配 |
 | `scheduling_assignments.js` | 逐人來源、固定班與意願鎖定 |
@@ -52,7 +52,7 @@ Google Apps Script 的 JavaScript 與 HTML 統一放在 [`gas/`](gas/)；下表�
 
 後端工作表名稱見 `CONFIG.SHEET_NAMES`：`Run_Control`、`Staff`、`FT_Requests`、`PT_Availability`、`System_Configurations`、`Schedule_Output`。部分 repo 從第三列讀取資料，匯出另依賴既有版面，須保留原結構。動態設定的班別、人員與休診日由 `RulesConfig` 載入。
 
-部署時需完整同步 `gas/` 內的正式 JS 模組與 HTML，保留 Spreadsheet／Mail 等所需授權，核對專案時區與觸發器。更新 Library 版本與 Web App、觸發器或外部選單的連結方式，須在 TEST 環境確認；目前文件未完整描述這些外部設定。
+部署時需完整同步 `GAS/` 內的正式 JS 模組與 HTML，保留 Spreadsheet／Mail 等所需授權，核對專案時區與觸發器。更新 Library 版本與 Web App、觸發器或外部選單的連結方式，須在 TEST 環境確認；目前文件未完整描述這些外部設定。
 
 本機測試不能確認 GAS 實際權限、Library LockService 範圍、執行時間配額或真實 Spreadsheet I/O。先在 TEST 環境確認填寫、截止重試、排班、匯出與寄信，再處理正式部署。正式 GAS 暫由 Robin 部署，共同維護與交接方式見 [貢獻指南](CONTRIBUTING.md)。
 

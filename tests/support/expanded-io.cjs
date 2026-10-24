@@ -8,7 +8,7 @@ const ROOT = path.resolve(__dirname, '../..');
 const ENGINE_FILES = ['Config_system.js', 'scheduling_engine.js', 'scheduling_assignments.js',
   'scheduling_fairness.js', 'scheduling_adjustments.js', 'scheduling_saturday.js'];
 function sourceHash(files) {
-  return hash(files.map(file => [file, fs.readFileSync(path.join(ROOT, file.endsWith('.js') ? 'gas' : '', file), 'utf8')]));
+  return hash(files.map(file => [file, fs.readFileSync(path.join(ROOT, file.endsWith('.js') ? 'GAS' : '', file), 'utf8')]));
 }
 function identities() {
   const support = fs.readdirSync(__dirname).filter(f => f.endsWith('.cjs')).sort().map(f => `tests/support/${f}`);

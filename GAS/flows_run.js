@@ -3,7 +3,7 @@
  */
 
 /**
- * 2. 系統排程觸發點：每月 5 號執行
+ * 2. 系統排程觸發點：每月 1 號執行
  */
 function autoCreateMonthlyRun() {
   const now = new Date();
@@ -22,7 +22,7 @@ function autoCreateMonthlyRun() {
   const body = `
     <p>管理員您好：</p>
     <p>系統已自動建立 <b>${yearMonth}</b> 月份的排班紀錄，狀態為：<b>RUN_CREATED</b>。</p>
-    <p>請前往「TEST_大墩排班表」點選選單：<br>
+    <p>請前往「大墩恆新骨科班表」點選選單：<br>
     <b>【排班系統管理】->【正職排班開始】</b></p>
     <p>系統將會開放前端 Portal 供正職同仁填寫意願。</p>
   `;

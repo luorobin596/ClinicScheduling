@@ -1,6 +1,6 @@
 /**
  * scheduling_engine.gs
- * 排班核心引擎 v2.0
+ * 排班核心引擎 v4.0
  * 修正日期解析錯誤 + 實作第一階段：資料初始化與輸出至 Schedule_Output
  */
 var SchedulingEngine = {

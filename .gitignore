@@ -49,3 +49,9 @@ service_account*.json
 # Local expanded simulation outputs
 /cloud-pilot/
 /cloud-formal/
+
+# Local GAS project target and OAuth credentials
+.clasp.json
+.clasprc.json
+.clasprc.*.json
+node_modules/

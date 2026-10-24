@@ -168,3 +168,15 @@ function testGetInitialData() {
     }
   }
 }
+
+function testAdminEmail() {
+  const email = getRequiredScriptProperty_('ADMIN_EMAIL');
+
+  Notify.sendEmail(
+    email,
+    '【排班系統】Email 寄送測試',
+    '<p>這是測試信，確認管理員通知功能是否正常。</p>'
+  );
+
+  console.log('寄信呼叫完成，請確認收件匣。');
+}
