@@ -57,3 +57,6 @@ service_account*.json
 .clasprc.json
 .clasprc.*.json
 node_modules/
+
+# Local documentation
+/docs/

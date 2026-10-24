@@ -10,7 +10,7 @@ TZ=Asia/Taipei node --test tests/*.test.cjs
 
 `*.test.cjs` 是單元／整合回歸，`support/` 提供假 Google 服務與獨立稽核，`fixtures/` 保存固定輸入與問題重現案例。一般測試不需還原歷史結果，不寄信、不寫入真實試算表。
 
-2026-10-24 整理後，本機執行上述命令：203／203 通過；未啟動大型模擬或遠端部署。
+測試數量會隨版本改變。每次修改應執行上述命令，將實際結果及對應 commit 填入 PR；不能以過去的通過數字代替目前版本的驗證。
 
 核心覆蓋包括意願來源與鎖定、休假模型、最低覆蓋、工作日修補／保護、公平性、週六最大配對、報告信與截止重試。測試結果只代表本機驗證，GAS 權限、配額與實際 I/O 仍須 TEST 環境驗收。
 
@@ -26,4 +26,4 @@ TZ=Asia/Taipei node --test tests/*.test.cjs
 
 [歷史 400 組報告](results/summary.md)記錄 2026-10-20 的版本，不代表後續工作日修補已通過同樣驗收。歷次命令與開發過程見 [HISTORY.md](HISTORY.md)，其中數字與狀態均屬當時紀錄。
 
-保留 `analyze-fairness.cjs`（仍被測試引用）、`fairness-paired-rotation-100-2026-11.json`、全部 fixtures 及診斷工具。三組 `baseline-3-*` 先導輸出已清除，不影響正式四種各 100 組的封存資料。
+`analyze-fairness.cjs` 與 `fairness-paired-rotation-100-2026-11.json` 也供回歸測試使用，清理歷史工具前須檢查引用。fixtures 與診斷工具不屬於可任意刪除的輸出檔；可還原的歷史結果以封存清單為準。

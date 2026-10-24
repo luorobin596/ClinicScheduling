@@ -16,7 +16,7 @@ function check(root, environment) {
   }
   const configName = `.clasp.${environment}.json`;
   const configFile = path.join(root, configName);
-  if (!fs.existsSync(configFile)) throw new Error(`缺少 ${configName}，請依 docs/gas-deployment.md 設定。`);
+  if (!fs.existsSync(configFile)) throw new Error(`缺少 ${configName}，請依 CONTRIBUTING.md 設定。`);
   const config = JSON.parse(fs.readFileSync(configFile, 'utf8'));
   if (typeof config.scriptId !== 'string' || !/^[\w-]+$/.test(config.scriptId) || config.scriptId === 'REPLACE_WITH_SCRIPT_ID') {
     throw new Error('請填入有效的 Script ID；實際專案與權限仍須由部署者核對。');

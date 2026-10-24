@@ -2,12 +2,12 @@
 
 ## 公開專案與共同維護待辦（2026-10-24）
 
-- [ ] PR 自動測試（暫緩實作）：未來新增 pull_request 觸發的一般單元／整合測試，使用 `TZ=Asia/Taipei node --test tests/*.test.cjs`；大型模擬維持手動啟動。目前只記錄待辦，不新增或修改 workflow。
-- [x] 共同維護與發布約定：新增 [CONTRIBUTING.md](../CONTRIBUTING.md) 與 PR 範本。兩人使用分支與 PR，由另一人檢查；正式 GAS 暫由 Robin 部署，未來交接時再更新責任與操作資訊。
+- [ ] PR 自動測試（暫緩實作）：未來新增 pull_request 觸發的一般單元／整合測試，使用 `TZ=Asia/Taipei node --test tests/*.test.cjs`；大型模擬維持手動啟動。實作前須另行確認 workflow 範圍。
+- [x] 共同維護與發布約定：協作規則見 [CONTRIBUTING.md](../CONTRIBUTING.md) 與 PR 範本。兩人使用分支與 PR，由另一人檢查；正式 GAS 暫由主責維護者部署，未來交接時再更新責任與操作資訊。
 - [x] 授權：依允許其他診所使用、修改及商用的方向，加入 MIT LICENSE，著作權署名沿用 Git 作者名稱 luorobin。
-- [x] 公開前本機靜態檢查：已檢查目前檔案、本機可達 45 個 commit 與壓縮封存內容；結果與限制見 [檢查紀錄](../docs/publication-review.md)。
+- [x] 公開前本機靜態檢查：檢查涵蓋追蹤內容與本機可達歷史；後續提交仍須依 [貢獻指南](../CONTRIBUTING.md#資料與公開範圍) 檢查，歷史結果不代表新變更已驗證。
 
-## 本次文件與產物整理（2026-10-24）
+## 文件與產物整理紀錄（2026-10-24）
 
 - [x] 重整 README、規格入口與測試操作說明，封存歷史方案及重複任務紀錄。
 - [x] 26 份歷史 JSON 壓縮封存並核對 SHA-256，清除兩個三組先導輸出檔；保留測試、fixtures 及歷史工具。

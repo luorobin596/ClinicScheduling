@@ -6,9 +6,17 @@
 
 - 了解排班規則與設計：[規格索引](tasks/README.md)。
 - 修改程式與本機驗證：[測試說明](tests/README.md)。
-- 共同修改與部署：[貢獻指南](CONTRIBUTING.md)與 [GitHub → GAS 部署流程](docs/gas-deployment.md)。
+- 共同修改與部署：[貢獻指南](CONTRIBUTING.md)。
 - 查詢尚未完成的工作：[待辦事項](tasks/todo.md)。
 - 查詢歷次模擬：[歷史報告](tests/results/summary.md)及[原始結果封存](tests/results/archive/README.md)。歷史報告不是目前版本通過驗收的證明。
+
+## 如何共同維護
+
+使用同一份本機目錄，從工作分支修改 `GAS/`，完成本機及適用的 TEST 驗證後提出 PR；另一位維護者審查、核准並合併 main，再由主責維護者視需要手動部署正式 GAS。純文件變更不需部署，合併不會自動更新線上程式。
+
+- 第一次參與、分工與審查標準：見 [共同維護方式](CONTRIBUTING.md)。
+- clasp 安裝、雙環境設定與同步指令：見 [貢獻指南](CONTRIBUTING.md#gas-設定與同步指令)。
+- `.clasp.test.json` 與 `.clasp.production.json` 是各自電腦的設定，不提交 Git；`.clasp.json.example` 提供範本。只跑本機測試不需要 clasp 或 Google 權限。
 
 ## 本機驗證
 
@@ -40,7 +48,7 @@ Google Apps Script 的 JavaScript 與 HTML 統一放在 [`GAS/`](GAS/)；下表�
 
 ## GAS 設定與驗證邊界
 
-目前儲存庫不是一鍵部署套件，未包含完整試算表範本、GAS manifest 或外部管理選單專案。接手部署時須先取得既有 TEST 環境結構，核對各 repo 模組使用的欄位與版面；不要只依工作表名稱建立空白表。
+目前儲存庫不是一鍵部署套件，已包含 `GAS/appsscript.json`，但未包含完整試算表範本或外部管理選單專案。接手部署時須先取得既有 TEST 環境結構，核對各 repo 模組使用的欄位與版面；不要只依工作表名稱建立空白表。
 
 後端專案須設定以下 Script Properties：
 
@@ -54,7 +62,7 @@ Google Apps Script 的 JavaScript 與 HTML 統一放在 [`GAS/`](GAS/)；下表�
 
 部署時需完整同步 `GAS/` 內的正式 JS 模組與 HTML，保留 Spreadsheet／Mail 等所需授權，核對專案時區與觸發器。更新 Library 版本與 Web App、觸發器或外部選單的連結方式，須在 TEST 環境確認；目前文件未完整描述這些外部設定。
 
-本機測試不能確認 GAS 實際權限、Library LockService 範圍、執行時間配額或真實 Spreadsheet I/O。先在 TEST 環境確認填寫、截止重試、排班、匯出與寄信，再處理正式部署。正式 GAS 暫由 Robin 部署，共同維護與交接方式見 [貢獻指南](CONTRIBUTING.md)。
+本機測試不能確認 GAS 實際權限、Library LockService 範圍、執行時間配額或真實 Spreadsheet I/O。先在 TEST 環境確認填寫、截止重試、排班、匯出與寄信，再處理正式部署。正式 GAS 由主責維護者部署，共同維護與交接方式見 [貢獻指南](CONTRIBUTING.md)。
 
 ## 完成報告信
 
@@ -62,9 +70,9 @@ Google Apps Script 的 JavaScript 與 HTML 統一放在 [`GAS/`](GAS/)；下表�
 
 寄信失敗回傳「排班已完成、報告未寄出」警告，不還原已完成班表；目前無自動補寄。排班或匯出失敗不寄完成信。資料寫入並非跨 Sheet 原子交易，狀態還原不等於舊班表已恢復。
 
-## 公開準備狀態
+## 維護與資料管理
 
-PR 自動測試暫緩，現有大型模擬只手動啟動。共同維護與部署約定已記錄於 [CONTRIBUTING.md](CONTRIBUTING.md)；程式碼採用 [MIT License](LICENSE)。靜態檢查範圍、限制與確認結果見[檢查紀錄](docs/publication-review.md)；其餘工作見[待辦](tasks/todo.md)。
+一般回歸測試由維護者手動執行並記錄於 PR，大型模擬僅手動啟動。共同維護與部署規則見 [CONTRIBUTING.md](CONTRIBUTING.md)；程式碼採用 [MIT License](LICENSE)。本機設定、資料隔離與敏感資訊的處理方式見[貢獻指南](CONTRIBUTING.md)。後續工作見[待辦](tasks/todo.md)。
 
 ## 授權
 
