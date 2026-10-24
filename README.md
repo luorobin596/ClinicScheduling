@@ -6,6 +6,7 @@
 
 - 了解排班規則與設計：[規格索引](tasks/README.md)。
 - 修改程式與本機驗證：[測試說明](tests/README.md)。
+- 共同修改與部署：[貢獻指南](CONTRIBUTING.md)。
 - 查詢尚未完成的工作：[待辦事項](tasks/todo.md)。
 - 查詢歷次模擬：[歷史報告](tests/results/summary.md)及[原始結果封存](tests/results/archive/README.md)。歷史報告不是目前版本通過驗收的證明。
 
@@ -51,7 +52,7 @@ TZ=Asia/Taipei node --test tests/*.test.cjs
 
 部署時需完整同步正式 JS 模組與 HTML，保留 Spreadsheet／Mail 等所需授權，核對專案時區與觸發器。更新 Library 版本與 Web App、觸發器或外部選單的連結方式，須在 TEST 環境確認；目前文件未完整描述這些外部設定。
 
-本機測試不能確認 GAS 實際權限、Library LockService 範圍、執行時間配額或真實 Spreadsheet I/O。先在 TEST 環境確認填寫、截止重試、排班、匯出與寄信，再處理正式部署。部署責任與貢獻規則仍待討論。
+本機測試不能確認 GAS 實際權限、Library LockService 範圍、執行時間配額或真實 Spreadsheet I/O。先在 TEST 環境確認填寫、截止重試、排班、匯出與寄信，再處理正式部署。正式 GAS 暫由 Robin 部署，共同維護與交接方式見 [貢獻指南](CONTRIBUTING.md)。
 
 ## 完成報告信
 
@@ -61,4 +62,4 @@ TZ=Asia/Taipei node --test tests/*.test.cjs
 
 ## 公開準備狀態
 
-PR 自動測試暫緩，現有大型模擬只手動啟動。貢獻／發布規則、公開資料範圍及 LICENSE 尚待討論；目前檔案與 Git 歷史的敏感資料檢查尚未完成。詳見[待辦](tasks/todo.md)。
+PR 自動測試暫緩，現有大型模擬只手動啟動。共同維護與部署約定已記錄於 [CONTRIBUTING.md](CONTRIBUTING.md)；公開資料範圍及 LICENSE 尚待討論；目前檔案與 Git 歷史的敏感資料檢查尚未完成。詳見[待辦](tasks/todo.md)。
