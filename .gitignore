@@ -17,3 +17,35 @@ id_ed25519
 credentials.json
 service-account*.json
 service_account*.json
+
+# Restored historical simulation evidence (canonical copy is the archive)
+/tests/results/baseline-evaluation.json
+/tests/results/baseline-inputs.json
+/tests/results/fairness-neighborhood-diagnosis.json
+/tests/results/full-only-evaluation.json
+/tests/results/full-only-inputs.json
+/tests/results/hours-bias-diagnosis.json
+/tests/results/mixed-evaluation.json
+/tests/results/mixed-inputs.json
+/tests/results/saturday-allocation/baseline-evaluation.json
+/tests/results/saturday-allocation/baseline-inputs.json
+/tests/results/saturday-allocation/full-only-evaluation.json
+/tests/results/saturday-allocation/full-only-inputs.json
+/tests/results/saturday-allocation/mixed-evaluation.json
+/tests/results/saturday-allocation/mixed-inputs.json
+/tests/results/saturday-allocation/week-off-evaluation.json
+/tests/results/saturday-allocation/week-off-inputs.json
+/tests/results/saturday-pairing/baseline-evaluation.json
+/tests/results/saturday-pairing/baseline-inputs.json
+/tests/results/saturday-pairing/full-only-evaluation.json
+/tests/results/saturday-pairing/full-only-inputs.json
+/tests/results/saturday-pairing/mixed-evaluation.json
+/tests/results/saturday-pairing/mixed-inputs.json
+/tests/results/saturday-pairing/week-off-evaluation.json
+/tests/results/saturday-pairing/week-off-inputs.json
+/tests/results/week-off-evaluation.json
+/tests/results/week-off-inputs.json
+
+# Local expanded simulation outputs
+/cloud-pilot/
+/cloud-formal/

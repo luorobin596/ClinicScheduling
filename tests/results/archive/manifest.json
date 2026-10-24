@@ -1,0 +1,135 @@
+{
+  "schema": "historical-results-archive-v1",
+  "entries": [
+    {
+      "path": "baseline-evaluation.json",
+      "bytes": 3566753,
+      "sha256": "30281a16fd085e9d7d2b9d491f73024bb6a7b2a72e3efb3678f1a163fae048bf"
+    },
+    {
+      "path": "baseline-inputs.json",
+      "bytes": 1773322,
+      "sha256": "bdcb2ea26c6387a429fa1814669e15675d73c7741acad1c9ec7b7dda56ec078d"
+    },
+    {
+      "path": "fairness-neighborhood-diagnosis.json",
+      "bytes": 63021,
+      "sha256": "8d53138a14114a18783a1f1eefd17fb0e2d9aed3ebcd88e36b74208b3d48c4f1"
+    },
+    {
+      "path": "full-only-evaluation.json",
+      "bytes": 3404460,
+      "sha256": "863e622dbeb2590b75d5ae483ac5c9acb54f233cd332fa91464e93ce0cdd21de"
+    },
+    {
+      "path": "full-only-inputs.json",
+      "bytes": 1187509,
+      "sha256": "56e253e7b1defb9c4e6c406677f5370c3e2789d08ab3db767f221d5c29e597ef"
+    },
+    {
+      "path": "hours-bias-diagnosis.json",
+      "bytes": 35237,
+      "sha256": "d9379099a3ad97072a2af2e94c35a77e440b90afc552f87f156ad432fd8aa33c"
+    },
+    {
+      "path": "mixed-evaluation.json",
+      "bytes": 3594048,
+      "sha256": "a42f3a19187427d840d224a7750030e9dc5a601f5ef6c65097d154407b0d727c"
+    },
+    {
+      "path": "mixed-inputs.json",
+      "bytes": 1798186,
+      "sha256": "3bd419b2cad9243363c18e055762312b8e1372eb7356a8af7a04e443c8d4c7dd"
+    },
+    {
+      "path": "saturday-allocation/baseline-evaluation.json",
+      "bytes": 9682116,
+      "sha256": "89de27a2ab028d587fccfd383c56284275e8b8b054c2f5914b6264520c5c4a94"
+    },
+    {
+      "path": "saturday-allocation/baseline-inputs.json",
+      "bytes": 1773322,
+      "sha256": "bdcb2ea26c6387a429fa1814669e15675d73c7741acad1c9ec7b7dda56ec078d"
+    },
+    {
+      "path": "saturday-allocation/full-only-evaluation.json",
+      "bytes": 9533247,
+      "sha256": "614308263bdec51672fad3ae2b8d42ac9572ed95dfd1751cd53fe5fc0d5469d4"
+    },
+    {
+      "path": "saturday-allocation/full-only-inputs.json",
+      "bytes": 1187509,
+      "sha256": "56e253e7b1defb9c4e6c406677f5370c3e2789d08ab3db767f221d5c29e597ef"
+    },
+    {
+      "path": "saturday-allocation/mixed-evaluation.json",
+      "bytes": 9733679,
+      "sha256": "351ef8cb2967764e2631fe488a0d650927691edda52c51f866bc025722afe46b"
+    },
+    {
+      "path": "saturday-allocation/mixed-inputs.json",
+      "bytes": 1798186,
+      "sha256": "3bd419b2cad9243363c18e055762312b8e1372eb7356a8af7a04e443c8d4c7dd"
+    },
+    {
+      "path": "saturday-allocation/week-off-evaluation.json",
+      "bytes": 9568212,
+      "sha256": "e7bd55d1ca018a47cdedd46ba05e2bd9163789107f1f4d83da5e9432f803c798"
+    },
+    {
+      "path": "saturday-allocation/week-off-inputs.json",
+      "bytes": 1312888,
+      "sha256": "e3662c76990edd8a31e8c457d9b5816234eebe67f17fa4d1f7426ece6b784c4a"
+    },
+    {
+      "path": "saturday-pairing/baseline-evaluation.json",
+      "bytes": 10197909,
+      "sha256": "83621c4acb55896d0c3fa45d855281bf48f8f4695bdfc602f40924b1c2245a64"
+    },
+    {
+      "path": "saturday-pairing/baseline-inputs.json",
+      "bytes": 1773322,
+      "sha256": "bdcb2ea26c6387a429fa1814669e15675d73c7741acad1c9ec7b7dda56ec078d"
+    },
+    {
+      "path": "saturday-pairing/full-only-evaluation.json",
+      "bytes": 10053449,
+      "sha256": "53ea0570ced0454eb4708ba714e34de25a3d6f2d5fd25da7c288df9d38631c2a"
+    },
+    {
+      "path": "saturday-pairing/full-only-inputs.json",
+      "bytes": 1187509,
+      "sha256": "56e253e7b1defb9c4e6c406677f5370c3e2789d08ab3db767f221d5c29e597ef"
+    },
+    {
+      "path": "saturday-pairing/mixed-evaluation.json",
+      "bytes": 10252682,
+      "sha256": "12b59acd36227cfc361b13c543ba5fcaa55590bc018e8bb47a72e3e60a0c49af"
+    },
+    {
+      "path": "saturday-pairing/mixed-inputs.json",
+      "bytes": 1798186,
+      "sha256": "3bd419b2cad9243363c18e055762312b8e1372eb7356a8af7a04e443c8d4c7dd"
+    },
+    {
+      "path": "saturday-pairing/week-off-evaluation.json",
+      "bytes": 10087216,
+      "sha256": "c9053f607d9286d1e04429bb761104001e4b438754559b2956021d3c6bac765d"
+    },
+    {
+      "path": "saturday-pairing/week-off-inputs.json",
+      "bytes": 1312888,
+      "sha256": "e3662c76990edd8a31e8c457d9b5816234eebe67f17fa4d1f7426ece6b784c4a"
+    },
+    {
+      "path": "week-off-evaluation.json",
+      "bytes": 3436610,
+      "sha256": "5b00037c34ff15fc316617340c66ce26f7b0dd76bc80ba1571ea094db3eee2f5"
+    },
+    {
+      "path": "week-off-inputs.json",
+      "bytes": 1312888,
+      "sha256": "e3662c76990edd8a31e8c457d9b5816234eebe67f17fa4d1f7426ece6b784c4a"
+    }
+  ]
+}
