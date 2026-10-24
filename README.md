@@ -62,7 +62,7 @@ TZ=Asia/Taipei node --test tests/*.test.cjs
 
 ## 公開準備狀態
 
-PR 自動測試暫緩，現有大型模擬只手動啟動。共同維護與部署約定已記錄於 [CONTRIBUTING.md](CONTRIBUTING.md)；程式碼採用 [MIT License](LICENSE)，公開資料範圍仍待確認；已完成目前檔案、本機可達 Git 歷史及封存內容的靜態檢查，仍有歷史作者信箱與意願案例等公開範圍待確認，見[檢查紀錄](docs/publication-review.md)。詳見[待辦](tasks/todo.md)。
+PR 自動測試暫緩，現有大型模擬只手動啟動。共同維護與部署約定已記錄於 [CONTRIBUTING.md](CONTRIBUTING.md)；程式碼採用 [MIT License](LICENSE)。公開資料範圍確認已完成：Gmail 歷史清理與遠端驗證已完成，意願案例已確認為編造測試資料，診所名稱「大墩」與註解暱稱「小羅」均經同意保留。靜態檢查範圍、限制與確認結果見[檢查紀錄](docs/publication-review.md)；其餘工作見[待辦](tasks/todo.md)。
 
 ## 授權
 
