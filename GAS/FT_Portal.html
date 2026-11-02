@@ -418,7 +418,10 @@
         });
 
         // 2. 計算剩餘班別加入 fixed_shifts (指定上班)
-        ['A', 'B', 'C'].forEach(s => {
+        const [year, month, day] = date.split('-').map(Number);
+        const availableShifts = new Date(year, month - 1, day).getDay() === 6
+          ? ['A', 'B'] : ['A', 'B', 'C'];
+        availableShifts.forEach(s => {
           if (!info.shifts.includes(s)) {
             fix.push(`${date}|${s}`);
           }
