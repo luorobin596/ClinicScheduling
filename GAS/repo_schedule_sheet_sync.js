@@ -54,7 +54,8 @@ function exportScheduleToFrontend(runIdInput) {
 
   // 4. 執行寫入
   // ★ 修正點 2: 這裡會保護下方公式
-  _writeToFrontendSheet(targetSheet, aggregatedData, runId);
+  const requests = ScheduleAssignments.normalizeRequests(RepoRequests.getAllRequestsByRun(runId));
+  _writeToFrontendSheet(targetSheet, aggregatedData, runId, requests, staffMap);
   
   console.log(`[Export] ✅ 成功寫入前台工作表 ${sheetName}`);
 }
@@ -169,17 +170,17 @@ function _fetchAndAggregateData(runId, staffMap) {
  * 內部邏輯：寫入前台 (Rendering)
  * 手術修改：動態偵測「目前缺班」欄位並寫入，且保護下方公式
  */
-function _writeToFrontendSheet(sheet, data, runId) {
+function _writeToFrontendSheet(sheet, data, runId, requests, staffMap) {
   // 1. 建立 X 軸座標 (姓名 -> Column Index)
   const nameRowValues = sheet.getRange("C3:Z3").getValues()[0]; 
-  const nameToCol = {}; 
+  const nameToCol = new Map();
   let validNameCount = 0;
   let gapColIndex = -1; // ★ 用來存「目前缺班」的相對索引
 
   nameRowValues.forEach((name, index) => {
     if (name) {
       const cleanName = name.toString().trim();
-      nameToCol[cleanName] = index; // 相對 index
+      nameToCol.set(cleanName, index); // 相對 index
       validNameCount++;
       
       // ★ 偵測目標欄位
@@ -211,12 +212,14 @@ function _writeToFrontendSheet(sheet, data, runId) {
   // 3. 準備矩陣
   const numCols = nameRowValues.length; 
   const richTextMatrix = [];
+  const dateToRow = new Map();
 
   for (let r = 0; r < validRows; r++) {
     const rowArray = [];
     const dayNum = dateColValues[r][0]; 
     const dayStr = String(dayNum).padStart(2, '0');
     const fullDateKey = `${runId}-${dayStr}`; 
+    dateToRow.set(fullDateKey, startRow + r);
     // ★ 配合新結構讀取
     const dayInfo = data[fullDateKey] || { staffData: {}, gapList: [] };
 
@@ -271,8 +274,22 @@ function _writeToFrontendSheet(sheet, data, runId) {
     richTextMatrix.push(rowArray);
   }
 
-  // 4. 寫入 (只寫入有效範圍)
+  // 4. 找出個人意願對應的儲存格，同一日指定多個班別只上色一次。
+  const requestedCells = new Set();
+  for (const request of requests) {
+    const name = String(staffMap[request.staff_id] || "").trim();
+    const column = nameToCol.get(name);
+    const row = dateToRow.get(request.date);
+    if (name && row !== undefined && column !== undefined && column !== gapColIndex) {
+      requestedCells.add(`R${row}C${column + 3}`);
+    }
+  }
+
+  // 5. 保留原有文字寫入邏輯，另外設定指定儲存格的背景。
   sheet.getRange(startRow, 3, validRows, numCols).setRichTextValues(richTextMatrix);
+  if (requestedCells.size) {
+    sheet.getRangeList(Array.from(requestedCells)).setBackground("#cfe2f3"); // 淺藍色 3
+  }
 }
 
 // --- 輔助函式 ---
