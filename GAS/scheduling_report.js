@@ -46,19 +46,23 @@ function summarizeWeeks(context,staff){
 
   function build(context) {
     const staff = context.staffList;
-    const monthly = ScheduleFairness.measure(context, staff);
-    const weekly = summarizeWeeks(context, staff);
-    const voluntary = [];
+    const normal = context.normalSchedule || context;
+    const monthly = ScheduleFairness.measure(normal, staff);
+    const weekly = summarizeWeeks(normal, staff);
+    const extraHours = context.extraHours || {};
+    const voluntary = staff.flatMap(person => normal.days.filter(day => day.isOpen).flatMap(day => {
+      const work = ScheduleFairness.workContribution(normal, day, person.id);
+      return work.voluntarySingle ? [{id: person.id, date: day.date, shift: work.pattern}] : [];
+    }));
     const saturday = staff.map(person => {
       const row = {id: person.id, AB: 0, A: 0, B: 0, unassigned: 0};
-      context.days.filter(day => day.isOpen).forEach(day => {
+      context.days.filter(day => day.isOpen && day.dayOfWeek === 6).forEach(day => {
         const work = ScheduleFairness.workContribution(context, day, person.id);
-        if (work.voluntarySingle) voluntary.push({id: person.id, date: day.date, shift: work.pattern});
-        if (day.dayOfWeek === 6) row[work.pattern || 'unassigned']++;
+        row[work.pattern || 'unassigned']++;
       });
       return row;
     });
-    return {runId: context.runIdStr, staff: staff, monthly: monthly.staff, weekly: weekly, voluntary: voluntary, saturday: saturday};
+    return {runId: context.runIdStr, staff: staff, monthly: monthly.staff, weekly: weekly, voluntary: voluntary, saturday: saturday, extraHours: extraHours};
   }
 
   function escape(value) {
@@ -74,20 +78,25 @@ function summarizeWeeks(context,staff){
     const name = id => { const person = report.staff.find(p => p.id === id); return person.name || id; };
     const value = n => n === null ? 'N/A' : n;
     const rate = (w, kind) => percent(w[kind + 'Rate']) + '（' + w[kind + 'Actual'] + '/' + w[kind + 'Target'] + '）';
-    return '<h1>' + escape(report.runId) + ' 排班完成報告</h1><p>本信僅統計本次排班的最終結果，非多次排班平均；每班以 4 小時計算，包含骨科與小兒科。</p>' +
+    const weekLabel = w => '第 ' + w.week + ' 週 ' + w.startDate + '～' + w.endDate + (w.shortWeek ? '（短週）' : '');
+    const displayHours = p => report.extraHours?.[p.id] ? p.hours + ' + ' + report.extraHours[p.id] : p.hours;
+    return '<h1>' + escape(report.runId) + ' 排班完成報告</h1><p>本信呈現本次排班結果。工時達成率、單節班及每週班型採補班前的班表。每班以 4 小時計算，包含骨科與小兒科。</p>' +
       '<h2>每人當月統計</h2>' + table(['姓名', '實際工時', '預排工時', '月工時達成率', '非自願單節班次數', '自願單節班次數'],
-        report.monthly.map(p => [name(p.id), p.hours, value(p.capacityHours), percent(p.attainment), p.involuntarySingle, p.voluntarySingle])) +
+        report.monthly.map(p => [name(p.id), displayHours(p), value(p.capacityHours), percent(p.attainment), p.involuntarySingle, p.voluntarySingle])) +
       '<ul>' +
-      '<li>實際工時：本次班表實際安排的總工時，每班 4 小時，包含骨科與小兒科。</li>' +
+      '<li>實際工時欄先列補班前實排工時，加號後列補班工時。</li>' +
       '<li>預排工時：該名員工扣除當月休假後的可排工時。每個營業日以 8 小時為基礎，全天休假扣 8 小時；指定只上一班且其餘時段休假，扣 4 小時。</li>' +
-      '<li>月工時達成率：實際工時 ÷ 預排工時，以百分比呈現。</li>' +
+      '<li>月工時達成率為補班前實排工時 ÷ 預排工時，以百分比呈現。</li>' +
       '<li>自願單節班：員工指定只上一班，且其餘時段皆請假，最終班表也只安排該班。</li>' +
       '<li>非自願單節班：當天只安排一班，但不符合上述自願單節班條件。</li>' +
       '<li>N/A：無法計算或不適用，可能原因包括未提交排班意願、休假資料不足、預排工時為零，或該週班別目標為零。</li>' +
       '</ul>' +
       '<h2>自願單節班明細</h2>' + (report.voluntary.length ? table(['姓名', '日期', '班別'], report.voluntary.map(p => [name(p.id), p.date, p.shift])) : '<p>本次無自願單節班。</p>') +
+      '<h2>每人每週單節班</h2>' + table(['姓名', '週別／日期範圍', '非自願單節次數', '自願單節次數'],
+        report.monthly.flatMap((p, index) => p.weekly.map((w, i) =>
+          [name(p.id), weekLabel(report.weekly[index].weeks[i]), w.involuntarySingle, w.voluntarySingle]))) +
       '<h2>每人每週班型</h2>' + table(['姓名', '週別／日期範圍', 'AC 次數', 'C 班達成率（實際/目標）', '早班達成率（實際/目標）'],
-        report.weekly.flatMap(p => p.weeks.map(w => [name(p.id), '第 ' + w.week + ' 週 ' + w.startDate + '～' + w.endDate + (w.shortWeek ? '（短週）' : ''), w.AC, rate(w, 'c'), rate(w, 'early')]))) +
+        report.weekly.flatMap(p => p.weeks.map(w => [name(p.id), weekLabel(w), w.AC, rate(w, 'c'), rate(w, 'early')]))) +
       '<ul>' +
       '<li>週別：每週由週日至週六，日期僅列當月範圍。</li>' +
       '<li>AC 次數：同一天安排 A 班與 C 班的次數，包含骨科、小兒科及週六。</li>' +

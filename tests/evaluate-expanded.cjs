@@ -38,53 +38,75 @@ function evaluate(fixture) {
   try {
     if (fixture.scenario.expectedConflict) run.negativeProbe = expectedConflictProbe(fixture);
     const loaded = engine(fixture.requests, {staff: fixture.staff, settings: fixture.settings});
-    const {e, adjustments, fairness} = loaded;
-    initial = e.generateInitialSchedule(fixture.month);
+    const {e, fairness} = loaded;
+    let firstAudit;
     const snapshot = context => {
       const measure = fairness.measure(context, fixture.staff);
-      for (const person of measure.staff) assert.equal(person.capacityHours,
-        fixture.leaveSummary.find(s => s.id === person.id).expectedCapacityHours, 'Capacity diverged from original leave');
+      for (const person of measure.staff) {
+        const systemDays = context.days.filter(day => day.systemRest?.includes(person.id));
+        const originalCapacity = fixture.leaveSummary.find(s => s.id === person.id).expectedCapacityHours;
+        const target = context.days.filter(day => day.dayOfWeek === 6).length * 8;
+        const openHours = context.days.filter(day => day.isOpen).length * 8;
+        assert.equal(systemDays.length, Math.max(0, Math.floor((target - (openHours - originalCapacity)) / 8)));
+        assert.equal(person.capacityHours, originalCapacity - 8 * systemDays.length);
+        for (const day of systemDays) {
+          assert.ok(day.isOpen && !fixture.requests.some(r => r.date === day.date && r.staff_id === person.id));
+          assert.ok(Object.values(day.slots).every(slots => Object.values(slots).every(slot => !slot.staff.includes(person.id))));
+        }
+      }
       return {measure, weekly: summarizeWeeks(context, fixture.staff)};
     };
-    adjustments.validate(initial, fixture.staff);
-    auditPeds(initial, fixture);
-    const firstAudit = audit(initial, fixture);
-    run.initial = {...snapshot(initial), audit: firstAudit};
-    run.weekdayWorkdays = {schema: 'weekday-workdays-v2', initial: weekdayGaps(initial, fixture.staff, fixture.requests)};
-    run.saturday = initial.saturdayAllocationReport;
-    const options = {...BUDGET, deadline: Date.now() + BUDGET.timeLimitMs};
-    stage = 'REPAIR';
-    repaired = adjustments.repair(initial, fixture.staff, options);
-    run.weekdayWorkdays.repaired = weekdayGaps(repaired.context, fixture.staff, fixture.requests);
-    run.repaired = {...snapshot(repaired.context), report: repaired.report,
-      audit: audit(repaired.context, fixture, {minimum: true, pedsSnapshot: firstAudit.peds})};
-    stage = 'WORKDAY_REPAIR';
-    workdayRepaired = adjustments.repairWorkdays(repaired.context, fixture.staff, options);
-    run.weekdayWorkdays.workdayRepaired = weekdayGaps(workdayRepaired.context, fixture.staff, fixture.requests);
-    assert.equal(run.weekdayWorkdays.workdayRepaired.length, 0, 'Workday repair left weekday gaps');
-    run.workdayRepaired = {...snapshot(workdayRepaired.context), report: workdayRepaired.report,
-      audit: audit(workdayRepaired.context, fixture, {minimum: true, pedsSnapshot: firstAudit.peds})};
-    stage = 'FAIRNESS';
-    const final = adjustments.improve(workdayRepaired.context, fixture.staff, options);
+    const gaps = context => weekdayGaps(context, fixture.staff, fixture.requests);
+    const delivered = e.buildSchedule(fixture.month, {...BUDGET, onStage(next, context, report) {
+      stage = next;
+      if (next === 'INITIAL') {
+        initial = repaired = workdayRepaired = null;
+        for (const key of ['initial', 'repaired', 'workdayRepaired', 'saturday']) delete run[key];
+        run.weekdayWorkdays = {schema: 'weekday-workdays-v2'};
+      } else if (next === 'REPAIR') {
+        initial = context;
+        auditPeds(initial, fixture);
+        firstAudit = audit(initial, fixture);
+        run.initial = {...snapshot(initial), audit: firstAudit};
+        run.saturday = initial.saturdayAllocationReport;
+        run.weekdayWorkdays.initial = gaps(initial);
+      } else if (next === 'WORKDAY_REPAIR') {
+        repaired = context;
+        run.repaired = {...snapshot(repaired), report, audit: audit(repaired, fixture, {minimum: true, pedsSnapshot: firstAudit.peds})};
+        run.weekdayWorkdays.repaired = gaps(repaired);
+      } else if (next === 'FAIRNESS') {
+        workdayRepaired = context;
+        run.workdayRepaired = {...snapshot(context), report, audit: audit(context, fixture, {minimum: true, pedsSnapshot: firstAudit.peds})};
+        run.weekdayWorkdays.workdayRepaired = gaps(context);
+        assert.equal(run.weekdayWorkdays.workdayRepaired.length, 0, 'Workday repair left weekday gaps');
+      }
+    }});
+    const normal = delivered.normalSchedule;
     stage = 'AUDIT';
-    run.weekdayWorkdays.final = weekdayGaps(final.context, fixture.staff, fixture.requests).map(gap => {
-      const same = entry => entry.date === gap.date && entry.id === gap.id;
-      const stageOrigin = !run.weekdayWorkdays.workdayRepaired.some(same) ? 'FAIRNESS' :
-        !run.weekdayWorkdays.repaired.some(same) ? 'WORKDAY_REPAIR' : run.weekdayWorkdays.initial.some(same) ? 'INITIAL' : 'REPAIR';
-      return {...gap, stageOrigin};
-    });
-    assertWeekdayWorkdays(workdayRepaired.context, final.context, fixture.staff);
+    run.weekdayWorkdays.final = gaps(delivered);
+    assertWeekdayWorkdays(workdayRepaired, normal, fixture.staff);
     assert.equal(run.weekdayWorkdays.final.length, 0, 'Final roster has an available weekday without work');
-    adjustments.validate(final.context, fixture.staff, {requireMinimumCoverage: true, requireWeekdayWorkdays: true, requireAllWeekdayWorkdays: true});
-    const finalAudit = audit(final.context, fixture, {minimum: true, pedsSnapshot: firstAudit.peds});
-    assert.ok(fairness.compareScores(final.report.after.score, run.workdayRepaired.measure.score) <= 0);
-    for (const [i, day] of final.context.days.entries()) {
+    const finalAudit = audit(delivered, fixture, {minimum: true, pedsSnapshot: firstAudit.peds});
+    const result = snapshot(normal);
+    assert.ok(fairness.compareScores(result.measure.score, run.workdayRepaired.measure.score) <= 0);
+    const extraHours = {};
+    for (const [i, day] of delivered.days.entries()) {
       for (const [shift, slots] of Object.entries(day.slots)) for (const station of ['ORTHO', 'PEDS']) {
-        assert.equal(slots[station].staff.length, workdayRepaired.context.days[i].slots[shift][station].staff.length);
+        const before = normal.days[i].slots[shift][station].staff;
+        assert.equal(before.length, workdayRepaired.days[i].slots[shift][station].staff.length);
+        assert.ok(before.every(id => slots[station].staff.includes(id)), 'Normal assignment lost during extra allocation');
+        for (const id of slots[station].staff.filter(id => !before.includes(id))) {
+          assert.equal(station, 'ORTHO');
+          assert.ok(day.systemRest.includes(id));
+          assert.equal(slots[station].assignmentMeta[id].source, 'SYSTEM_REST_EXTRA');
+          extraHours[id] = (extraHours[id] || 0) + 4;
+        }
       }
     }
-    run.final = {...snapshot(final.context), report: final.report, audit: finalAudit};
-    run.roster = JSON.parse(JSON.stringify(final.context.days));
+    assert.deepEqual(extraHours, {...delivered.extraHours});
+    run.final = {...result, report: normal.adjustmentReport.fairness, audit: finalAudit};
+    run.extraHours = extraHours;
+    run.roster = JSON.parse(JSON.stringify(delivered.days));
     if (fixture.scenario.expectedConflict) throw new Error('Negative input incorrectly accepted');
     run.status = 'VALID';
   } catch (error) {
@@ -94,8 +116,9 @@ function evaluate(fixture) {
     } else if (error.code === 'SEARCH_LIMIT') run.status = 'SEARCH_LIMIT';
     else if (error.code === 'COVERAGE_UNRESOLVED') run.status = 'COVERAGE_UNRESOLVED';
     else if (error.code === 'WORKDAY_UNRESOLVED') run.status = 'WORKDAY_UNRESOLVED';
+    else if (error.code === 'SYSTEM_REST_UNRESOLVED') run.status = 'SYSTEM_REST_UNRESOLVED';
     else run.status = 'ERROR';
-    if (initial) run.diagnosticRoster = JSON.parse(JSON.stringify((workdayRepaired ? workdayRepaired.context : repaired ? repaired.context : initial).days));
+    if (initial) run.diagnosticRoster = JSON.parse(JSON.stringify((workdayRepaired || repaired || initial).days));
   }
   run.elapsedMs = Date.now() - start;
   return run;

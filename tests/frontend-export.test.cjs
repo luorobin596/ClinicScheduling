@@ -3,15 +3,16 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-function exportRoster(requestRows) {
-  const backgrounds = { R5C3: '#cccccc', R5C4: '#cccccc', R8C3: '#999999' };
+function exportRoster(requestRows, systemRest = "") {
+  const backgrounds = { R5C3: '#cccccc', R5C4: '#cccccc', R5C6: '#d9ead3', R8C3: '#999999' };
   let roster;
   const sheet = {
     getRange(...range) {
       if (range[0] === 'C3:Z3') return { getValues: () => [['員工乙', ' 員工甲 ', '目前缺班', '員工丙']] };
       if (range[1] === 1) return { getValues: () => [[3], [1], [2], ['統計'], [4]] };
       assert.deepEqual(range, [5, 3, 3, 4]);
-      return { setRichTextValues: values => { roster = JSON.parse(JSON.stringify(values)); } };
+      return { getBackgrounds: () => Array.from({length: 3}, (_, r) => Array.from({length: 4}, (_, c) => backgrounds[`R${5 + r}C${3 + c}`])),
+        setRichTextValues: values => { roster = JSON.parse(JSON.stringify(values)); } };
     },
     getRangeList(cells) {
       assert.ok(cells.length);
@@ -24,7 +25,7 @@ function exportRoster(requestRows) {
     FT_Requests: [[], ...requestRows],
     Schedule_Output: [
       [], [],
-      ['2026-12', '2026-12-01', 'A', 'F1', 'F3', '', '', 'F2', 0, '', '', '', 'ORTHO'],
+      ['2026-12', '2026-12-01', 'A', 'F1', 'F3', '', '', 'F2', 0, '', '', '', 'ORTHO', '', '', systemRest],
       ['2026-12', '2026-12-01', 'C', 'F1', '', '', '', '', 1, '', '', '', 'PEDS']
     ]
   };
@@ -82,4 +83,11 @@ test('frontend highlights personal off and fixed requests at the employee and da
     { text: 'C', styles: [] },
     { text: 'A', styles: [{ start: 0, end: 1, color: 'black' }] }
   ]);
+});
+
+test('frontend restores system rest from Schedule_Output and removes stale highlights', () => {
+  const result = exportRoster([], 'SYSTEM_REST ["F1","F4"]');
+  assert.equal(result.backgrounds.R6C4, '#d9ead3');
+  assert.equal(result.roster[1][1].text, 'AC');
+  assert.equal(result.backgrounds.R5C6, null);
 });

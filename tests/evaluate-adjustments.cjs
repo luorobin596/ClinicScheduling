@@ -21,7 +21,7 @@ const diff=values=>values.length?Math.max(...values)-Math.min(...values):0;
 function measurements(measure){
  return {involuntarySingle:diff(measure.staff.map(p=>p.involuntarySingle)),
   attainmentPercentagePoints:diff(measure.staff.filter(p=>p.attainment!==null).map(p=>p.attainment*100)),
-  rawHours:diff(measure.staff.map(p=>p.hours)),weeklyACWorst:measure.score[4],weeklyACSum:measure.score[5],weeklyBCABWorst:measure.score[7],weeklyBCABSum:measure.score[8]};
+  rawHours:diff(measure.staff.map(p=>p.hours)),weeklyACWorst:measure.score.at(-6),weeklyACSum:measure.score.at(-5),weeklyBCABWorst:measure.score.at(-3),weeklyBCABSum:measure.score.at(-2)};
 }
 function initialFor(fixture){const loaded=engine(fixture.requests,{staff:fixture.staff});const context=loaded.e.generateInitialSchedule('2026-11');return {loaded,context};}
 function select(){

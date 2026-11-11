@@ -9,15 +9,42 @@ var SchedulingEngine = {
    * 主入口：執行排班 (第一階段：初始化 + 固定診填充)
    */
   generateSchedule: function(runId, options) {
-    const context = this.generateInitialSchedule(runId);
-    const staff = context.staffList;
+    const result = this.buildSchedule(runId, options);
+    this.saveToScheduleOutput(result);
+    return result;
+  },
+
+  buildSchedule: function(runId, options) {
     const settings = Object.assign({}, SCHEDULE_SEARCH_OPTIONS, options || {});
     const now = settings.now || Date.now;
     settings.deadline = now() + settings.timeLimitMs;
+    const input = {};
+    for (let attempt = 0; attempt < 32; attempt++) {
+      const rest = { attempt: attempt, people: [], input: input };
+      if (settings.onStage) settings.onStage("INITIAL");
+      try {
+        return this._completeSchedule(this.generateInitialSchedule(runId, rest), settings);
+      } catch (error) {
+        if (!rest.people.length || !['INPUT_CONFLICT', 'COVERAGE_UNRESOLVED', 'WORKDAY_UNRESOLVED', 'SATURDAY_TARGET_UNREACHABLE'].includes(error.code)) throw error;
+        if (attempt === 31 || now() >= settings.deadline) {
+          throw ScheduleAssignments.error('SYSTEM_REST_UNRESOLVED', '系統排休未找到可行組合', {
+            stage: 'SYSTEM_REST', people: rest.people, attempts: attempt + 1,
+            cause: { code: error.code, message: error.message, details: error.details }
+          });
+        }
+      }
+    }
+  },
+
+  _completeSchedule: function(context, settings) {
+    const staff = context.staffList;
     const initialStats = ScheduleFairness.measure(context, staff);
     ScheduleAdjustments.validate(context, staff, { requireMinimumCoverage: false });
+    if (settings.onStage) settings.onStage("REPAIR", context);
     const repaired = ScheduleAdjustments.repair(context, staff, settings);
+    if (settings.onStage) settings.onStage("WORKDAY_REPAIR", repaired.context, repaired.report);
     const workdayRepaired = ScheduleAdjustments.repairWorkdays(repaired.context, staff, settings);
+    if (settings.onStage) settings.onStage("FAIRNESS", workdayRepaired.context, workdayRepaired.report);
     const optimized = ScheduleAdjustments.improve(workdayRepaired.context, staff, settings);
     const result = optimized.context;
     result.adjustmentReport = {
@@ -26,23 +53,34 @@ var SchedulingEngine = {
       fairnessAdjusted: optimized.report.after, repair: repaired.report, workdayRepair: workdayRepaired.report, fairness: optimized.report
     };
     ScheduleAdjustments.validate(result, staff, { requireMinimumCoverage: true, requireWeekdayWorkdays: true, requireAllWeekdayWorkdays: true });
-    this.saveToScheduleOutput(result);
-    return result;
+    return this._fillExtraShifts(result);
   },
 
-  generateInitialSchedule: function(runId) {
+  generateInitialSchedule: function(runId, rest) {
     // 1. 初始化 Context (解析日期與營業規則)
-    const context = this.createContext(runId);
-    context.staffList = RepoStaff.getAvailableStaff('FT');
+    const input = rest ? rest.input : {};
+    if (!input.calendar) {
+      input.calendar = this.createContext(runId);
+      input.staff = RepoStaff.getAvailableStaff('FT');
+      input.requests = RepoRequests.getAllRequestsByRun(input.calendar.runIdStr);
+    }
+    const context = Object.assign({}, input.calendar, {
+      days: JSON.parse(JSON.stringify(input.calendar.days)), staffList: input.staff
+    });
     
     // 2. 獲取規則與申請資料
     const pedsRules = RulesConfig.getPedsRules ? RulesConfig.getPedsRules(context.settings) : RulesConfig.RULES.PEDS_RULES.patterns;
-    const ftRequests = RepoRequests.getAllRequestsByRun(context.runIdStr);
+    const ftRequests = input.requests;
     if (ftRequests.submittedStaffIds) context.submittedStaffIds = ftRequests.submittedStaffIds.slice();
 
     // 3. 執行填充邏輯
     console.log("--- 階段 1: 填充固定班與小兒科 ---");
     this._fillFixedShifts(context, pedsRules, ftRequests);
+    if (rest) {
+      // Diagnose conflicts in original requests before trying dates for system rest.
+      if (!rest.attempt) ScheduleAdjustments.assertFeasible(context, context.staffList);
+      this._assignSystemRest(context, rest);
+    }
 
     // ★ 重大變更：改為單一流程，逐人處理 C -> AC -> A
     console.log("--- 階段 2: 平日排班 (逐人: C -> AC -> A) ---");
@@ -62,6 +100,98 @@ var SchedulingEngine = {
     ScheduleAssignments.validateMetadata(context);
 
     console.log(`[Engine] 排班完成。月份: ${context.runIdStr}`);
+    return context;
+  },
+
+  _assignSystemRest: function(context, rest) {
+    const target = context.days.filter(day => day.dayOfWeek === 6).length * 8;
+    const original = context.constraints;
+    const off = Object.assign({}, original.off);
+    const staff = context.staffList.slice().sort((a, b) => a.id.localeCompare(b.id));
+    const measured = ScheduleFairness.measure(context, staff);
+    let seed = rest.attempt + 1;
+    for (const char of context.runIdStr) seed = Math.imul(seed ^ char.charCodeAt(0), 16777619);
+    for (const person of measured.staff) {
+      if (!person.capacityKnown) continue;
+      const deficit = target - person.leaveUnits * 4;
+      const needed = Math.floor(deficit / 8);
+      if (needed <= 0) continue;
+      rest.people.push({ id: person.id, deficitHours: deficit, requiredDays: needed });
+      const choices = context.days.filter(day => day.isOpen && Object.keys(day.slots).every(shift => {
+        const key = ScheduleAssignments.key(day.date, shift, person.id);
+        return !original.off[key] && !original.fixed[key] && !original.peds[key];
+      }));
+      if (choices.length < needed) throw ScheduleAssignments.error('SYSTEM_REST_UNRESOLVED', '可安排系統排休的日期不足', {
+        stage: 'SYSTEM_REST', id: person.id, deficitHours: deficit, requiredDays: needed, availableDays: choices.length
+      });
+      for (let i = 0; i < needed; i++) {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        const [day] = choices.splice(Math.floor(seed / 4294967296 * choices.length), 1);
+        if (!day.systemRest) day.systemRest = [];
+        day.systemRest.push(person.id);
+        for (const shift of Object.keys(day.slots)) {
+          off[ScheduleAssignments.key(day.date, shift, person.id)] = true;
+          day.slots[shift].ORTHO.off.push(person.id);
+        }
+      }
+    }
+    if (rest.people.length) {
+      context.constraints = Object.freeze(Object.assign({}, original, { off: Object.freeze(off) }));
+      ScheduleAdjustments.assertFeasible(context, staff);
+    }
+  },
+
+  _fillExtraShifts: function(normal) {
+    const staff = normal.staffList;
+    const people = normal.adjustmentReport.fairnessAdjusted.staff.slice().sort((a, b) =>
+      (a.attainment === null ? Infinity : a.attainment) - (b.attainment === null ? Infinity : b.attainment) ||
+      a.id.localeCompare(b.id));
+    const extraHours = {};
+    const pairing = Object.assign({}, normal.saturdayPairingRules);
+    const off = Object.assign({}, normal.constraints.off);
+    const context = Object.assign({}, normal, {
+      normalSchedule: normal, extraHours: extraHours,
+      constraints: Object.assign({}, normal.constraints, { off: off }), saturdayPairingRules: pairing,
+      days: normal.days.map(day => day.systemRest ? JSON.parse(JSON.stringify(day)) : day)
+    });
+    for (const size of [2, 1]) {
+      for (const day of context.days) {
+        if (!day.systemRest) continue;
+        const config = day.dayOfWeek === 6 ? RulesConfig.SHIFTS.SATURDAY : RulesConfig.SHIFTS.WEEKDAY;
+        const shifts = Object.keys(day.slots);
+        for (const person of people) {
+          const id = person.id;
+          if (!day.systemRest.includes(id) || shifts.some(s => day.slots[s].ORTHO.staff.includes(id))) continue;
+          const remaining = shift => config[shift].req_total - day.slots[shift].ORTHO.staff.length;
+          const open = shifts.filter(shift => remaining(shift) > 0).sort((a, b) => remaining(b) - remaining(a));
+          for (const add of SaturdayAllocator.combinations(open, size)) {
+            for (const shift of shifts) delete off[ScheduleAssignments.key(day.date, shift, id)];
+            if (day.dayOfWeek === 6) {
+              const rule = SaturdayAllocator.pairingRule(context, day, staff);
+              const a = day.slots.A.ORTHO.staff;
+              const b = day.slots.B.ORTHO.staff;
+              const counts = (a.length + Number(add.includes('A'))) + ':' + (b.length + Number(add.includes('B')));
+              const pairs = a.filter(id => b.includes(id)).length + Number(size === 2);
+              if (rule.maxByCounts[counts] !== pairs) {
+                for (const shift of shifts) off[ScheduleAssignments.key(day.date, shift, id)] = true;
+                continue;
+              }
+              pairing[day.date] = rule;
+            }
+            for (const shift of add) {
+              ScheduleAssignments.add(day, shift, 'ORTHO', id, 'SYSTEM_REST_EXTRA');
+            }
+            for (const shift of shifts) {
+              const slot = day.slots[shift].ORTHO;
+              slot.off = slot.off.filter(offId => offId !== id);
+            }
+            extraHours[id] = (extraHours[id] || 0) + 4 * size;
+            break;
+          }
+        }
+      }
+    }
+    ScheduleAdjustments.validate(context, staff, { requireMinimumCoverage: true, requireWeekdayWorkdays: true, requireAllWeekdayWorkdays: true });
     return context;
   },
 
@@ -819,7 +949,7 @@ var SchedulingEngine = {
             data.staff[1] || "",    // E: 員工2
             data.staff[2] || "",    // F: 員工3
             data.staff[3] || "",    // G: 員工4
-            data.off.join(","),     // H: 休假名單
+            data.off.filter(id => !day.systemRest || !day.systemRest.includes(id)).join(","), // H: 個人休假
             currentGap,                    // ★ I: current_gap (計算出的缺額) ★
             data.staff[0] ? data.assignmentMeta[data.staff[0]].source : "", // J: Source 1
             data.staff[1] ? data.assignmentMeta[data.staff[1]].source : "", // K: Source 2
@@ -827,7 +957,8 @@ var SchedulingEngine = {
             station,                // M: Station (ORTHO/PEDS)
             "system",               // N: User
             now,                    // O: Timestamp
-            data.note || ""         // P: Note
+            station === "ORTHO" && shift === "A" && day.systemRest
+              ? ScheduleAssignments.systemRestNote(day.systemRest) : data.note || "" // P: Note
           ]);
         });
       });

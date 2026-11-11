@@ -106,6 +106,11 @@ function _fetchAndAggregateData(runId, staffMap) {
         };
     }
 
+    if (station === 'ORTHO' && shift === 'A') {
+      result[dateStr].systemRest = new Set(ScheduleAssignments.readSystemRestNote(row[15])
+        .map(id => String(staffMap[id] || '').trim()).filter(Boolean));
+    }
+
     // --- Part A: 處理員工排班 ---
     const staffSlots = [row[3], row[4], row[5], row[6]];
     staffSlots.forEach(staffId => {
@@ -213,6 +218,8 @@ function _writeToFrontendSheet(sheet, data, runId, requests, staffMap) {
   const numCols = nameRowValues.length; 
   const richTextMatrix = [];
   const dateToRow = new Map();
+  const systemRestCells = new Set();
+  const systemRestColor = "#d9ead3";
 
   for (let r = 0; r < validRows; r++) {
     const rowArray = [];
@@ -225,6 +232,9 @@ function _writeToFrontendSheet(sheet, data, runId, requests, staffMap) {
 
     for (let c = 0; c < numCols; c++) {
       const headerName = nameRowValues[c] ? nameRowValues[c].toString().trim() : "";
+      if (c !== gapColIndex && dayInfo.systemRest && dayInfo.systemRest.has(headerName)) {
+        systemRestCells.add(`R${startRow + r}C${c + 3}`);
+      }
       let richValueBuilder = SpreadsheetApp.newRichTextValue();
 
       // Case 1: ★ 這是「目前缺班」欄位
@@ -286,7 +296,17 @@ function _writeToFrontendSheet(sheet, data, runId, requests, staffMap) {
   }
 
   // 5. 保留原有文字寫入邏輯，另外設定指定儲存格的背景。
-  sheet.getRange(startRow, 3, validRows, numCols).setRichTextValues(richTextMatrix);
+  const roster = sheet.getRange(startRow, 3, validRows, numCols);
+  const obsolete = [];
+  roster.getBackgrounds().forEach((row, r) => row.forEach((color, c) => {
+    const cell = `R${startRow + r}C${c + 3}`;
+    if (c !== gapColIndex && nameRowValues[c] && color === systemRestColor && !systemRestCells.has(cell)) {
+      obsolete.push(cell);
+    }
+  }));
+  roster.setRichTextValues(richTextMatrix);
+  if (obsolete.length) sheet.getRangeList(obsolete).setBackground(null);
+  if (systemRestCells.size) sheet.getRangeList(Array.from(systemRestCells)).setBackground(systemRestColor);
   if (requestedCells.size) {
     sheet.getRangeList(Array.from(requestedCells)).setBackground("#cfe2f3"); // 淺藍色 3
   }

@@ -24,7 +24,7 @@ var ScheduleFairness = {
         voluntarySingle: 0, involuntarySingle: 0, leaveUnits: 0, weekly: [],
         capacityKnown: Array.isArray(context.submittedStaffIds) && context.submittedStaffIds.includes(person.id) };
       weeks.forEach((days, index) => {
-        const weekly = { week: index + 1, AC: 0, BC: 0, AB: 0 };
+        const weekly = { week: index + 1, AC: 0, BC: 0, AB: 0, voluntarySingle: 0, involuntarySingle: 0 };
         days.forEach(day => {
           if (!day.isOpen) return;
           const shifts = Object.keys(day.slots);
@@ -41,6 +41,8 @@ var ScheduleFairness = {
           const work = this.workContribution(context, day, person.id);
           result.hours += work.hours;
           if (['AC', 'BC', 'AB'].includes(work.pattern)) weekly[work.pattern]++;
+          weekly.voluntarySingle += work.voluntarySingle;
+          weekly.involuntarySingle += work.involuntarySingle;
           result.voluntarySingle += work.voluntarySingle;
           result.involuntarySingle += work.involuntarySingle;
         });
@@ -82,7 +84,9 @@ var ScheduleFairness = {
       ab.push(this.dispersion(people.map(p => p.weekly[index].AB)));
     });
     const total = (list, index) => list.reduce((sum, value) => sum + value[index], 0);
+    const weeklySingles = people.flatMap(p => activeWeeks.map(i => p.weekly[i].involuntarySingle || 0));
     return singles.concat(hours, [
+      Math.max(0, ...weeklySingles), weeklySingles.reduce((sum, count) => sum + count * count, 0),
       Math.max(0, ...ac.map(v => v[0])), total(ac, 0), total(ac, 1),
       Math.max(0, ...bc.map(v => v[0]), ...ab.map(v => v[0])),
       total(bc, 0) + total(ab, 0), total(bc, 1) + total(ab, 1)

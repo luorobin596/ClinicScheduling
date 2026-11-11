@@ -167,7 +167,7 @@ var RulesConfig = {
           }
         });
         
-        dynamicSettings.closedDates = [...new Set(allDates)];
+        dynamicSettings.closedDates = [...new Set(dynamicSettings.closedDates.concat(allDates))];
       }
     }
     

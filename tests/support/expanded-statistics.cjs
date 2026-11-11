@@ -15,6 +15,6 @@ function spread(values) {
 function metrics(measure) {
   return {involuntarySingle: spread(measure.staff.map(s => s.involuntarySingle)),
     attainmentPercentagePoints: spread(measure.staff.filter(s => s.attainment !== null).map(s => s.attainment * 100)),
-    weeklyACWorst: measure.score[4], weeklyBCABWorst: measure.score[7]};
+    weeklyACWorst: measure.score.at(-6), weeklyBCABWorst: measure.score.at(-3)};
 }
 module.exports = {stats, spread, metrics};
