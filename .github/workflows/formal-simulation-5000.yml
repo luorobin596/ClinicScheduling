@@ -4,6 +4,15 @@ run-name: 5000-case formal test by @${{ github.actor }} (attempt ${{ github.run_
 # User-selected formal size. No push, pull_request or scheduled trigger.
 on:
   workflow_dispatch:
+    inputs:
+      pilot_run_id:
+        description: 'Run ID of the passing 200-case pilot for this version'
+        type: string
+        required: false
+      pilot_attempt:
+        description: 'Attempt number of that pilot (usually 1)'
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -35,6 +44,9 @@ jobs:
           persist-credentials: false
       - name: Read the user-reviewed formal plan
         id: plan
+        env:
+          PILOT_RUN_ID: ${{ inputs.pilot_run_id }}
+          PILOT_ATTEMPT: ${{ inputs.pilot_attempt }}
         run: |
           python3 <<'PY'
           import json, os, re
@@ -42,18 +54,34 @@ jobs:
           plan = json.loads(Path('.github/formal-test-plan.json').read_text())
           assert plan['schema'] == 'user-reviewed-formal-plan-v1'
           assert (plan['size'], plan['shards'], plan['maxParallel']) == (5000, 50, 4)
-          assert re.fullmatch(r'\d+', plan['pilotRunId'])
-          assert re.fullmatch(r'\d+', plan['pilotAttempt'])
+          run = os.environ['PILOT_RUN_ID'].strip()
+          attempt = os.environ['PILOT_ATTEMPT'].strip()
+          if bool(run) != bool(attempt):
+              raise SystemExit('Provide both pilot_run_id and pilot_attempt, or leave both blank.')
+          run = run or plan['pilotRunId']
+          attempt = attempt or plan['pilotAttempt']
+          if not all(re.fullmatch(r'[1-9][0-9]*', value) for value in (run, attempt)):
+              raise SystemExit('Pilot run ID and attempt must be positive integers.')
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write(f"run={plan['pilotRunId']}\nattempt={plan['pilotAttempt']}\n")
+              output.write(f"run={run}\nattempt={attempt}\n")
           PY
       - name: Download the completed pilot evidence
+        id: pilot-download
+        continue-on-error: true
         uses: actions/download-artifact@v7
         with:
           name: pilot-report-${{ steps.plan.outputs.run }}-${{ steps.plan.outputs.attempt }}
           run-id: ${{ steps.plan.outputs.run }}
           github-token: ${{ github.token }}
           path: cloud-formal/pilot-evidence
+      - name: Explain unavailable pilot evidence
+        if: ${{ steps.pilot-download.outcome == 'failure' }}
+        env:
+          PILOT_RUN_ID: ${{ steps.plan.outputs.run }}
+          PILOT_ATTEMPT: ${{ steps.plan.outputs.attempt }}
+        run: |
+          echo "::error::Cannot download pilot-report-${PILOT_RUN_ID}-${PILOT_ATTEMPT}. Check the run's artifacts. If missing or expired, run the 200-case pilot on this version, then start a new formal run with its run ID and attempt."
+          exit 1
       - name: Require the passing coordinated pilot and its exact Node version
         id: runtime
         run: |
@@ -74,6 +102,9 @@ jobs:
           node-version: ${{ steps.runtime.outputs.version }}
           package-manager-cache: false
       - name: Verify code and record the reviewed cost estimate
+        env:
+          PILOT_RUN_ID: ${{ steps.plan.outputs.run }}
+          PILOT_ATTEMPT: ${{ steps.plan.outputs.attempt }}
         run: |
           mkdir -p cloud-formal/validation cloud-formal/package/pilot cloud-formal/package/inputs
           node <<'NODE'
@@ -92,7 +123,9 @@ jobs:
           // This is the estimate reviewed in the conversation, NOT invented per-job billing data.
           fs.writeFileSync('cloud-formal/package/pilot/cost-estimate.json', JSON.stringify({
             schema: 'user-reviewed-cost-estimate-v1', identity: pilot.identity, pilotPassed: true,
-            formalExecutionAuthorized: true, review: plan, plans: [{size: 5000,
+            formalExecutionAuthorized: true, review: plan,
+            pilotEvidence: {runId: process.env.PILOT_RUN_ID, attempt: process.env.PILOT_ATTEMPT},
+            plans: [{size: 5000,
               budgetFormalMinutes: plan.budgetFormalMinutes,
               computeUSDIfFreeMinutesExhausted: plan.budgetFormalMinutes * plan.linuxRateUSDPerMinute}]
           }, null, 2));
