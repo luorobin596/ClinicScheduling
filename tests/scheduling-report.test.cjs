@@ -70,3 +70,17 @@ test('missing ADMIN_EMAIL fails explicitly instead of claiming the report was ma
   assert.throws(()=>h.box.ScheduleReport.send(c), /ADMIN_EMAIL/);
   assert.equal(sent.length,0);
 });
+
+test('report adds extra hours after the plus sign while fairness uses the normal roster', () => {
+  const {h,c} = fixture();
+  const final = {...c, days: JSON.parse(JSON.stringify(c.days)), normalSchedule: c, extraHours: {FT001: 4}};
+  h.assignments.add(final.days.find(d => d.date === '2026-11-30'), 'B', 'ORTHO', 'FT001', 'SYSTEM_REST_EXTRA');
+  const report = h.box.ScheduleReport.build(final);
+  assert.equal(report.monthly[0].hours, 24);
+  assert.equal(report.monthly[0].attainment, 24 / 28);
+  assert.equal(report.monthly[0].weekly.at(-1).involuntarySingle, 1);
+  const html = h.box.ScheduleReport.render(report);
+  assert.match(html, /<td>24 \+ 4<\/td>/);
+  assert.match(html, /每人每週單節班/);
+  assert.doesNotMatch(html, /\+ 0/);
+});

@@ -2,6 +2,13 @@
 var ScheduleAssignments = {
   key: function(date, shift, id) { return JSON.stringify([date, shift, id]); },
 
+  systemRestNote: function(ids) { return "SYSTEM_REST " + JSON.stringify(ids); },
+
+  readSystemRestNote: function(note) {
+    if (typeof note !== "string" || !note.startsWith("SYSTEM_REST ")) return [];
+    return JSON.parse(note.slice("SYSTEM_REST ".length));
+  },
+
   error: function(code, message, details) {
     const error = new Error(message);
     error.code = code;

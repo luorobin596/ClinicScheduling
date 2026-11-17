@@ -18,7 +18,7 @@ const METRICS = {
   weeklyBCABWorst: '各週 BC／AB 差距評分值'
 };
 const READING_GUIDE = [
-  '本報告只呈現通過最終驗證的交付班表（final），不呈現初步排班、修補階段或新舊版本比較。每個月份／情境／休假模式分開統計，公平性分母為該列成功樣本 n。', '',
+  '本報告呈現通過最終驗證的班表。工時達成率、單節班及每週班型採補班前班表。每個月份／情境／休假模式分開統計，公平性分母為該列成功樣本 n。', '',
   '「非自願單節差距」先在每張月班表內取五位員工的非自願單節次數最大值減最小值，再跨成功樣本平均；不是單節總量，也不是每人的平均次數。個人指定半天的單節排除，小兒班形成的非自願單節納入。工時達成率差距同理，單位為百分點。', '',
   '「每位員工的最終月平均」為各人的實際工時、應排工時、達成率及單節次數。達成率先逐組算個人實際工時／應排工時，再平均比率；不是平均工時相除。零分母排除，沒有有效值顯示 N/A。', '',
   '「每人每週」的 AC 為平均次數。C／早班只計週一至五營業日，包含骨科與小兒；C 包含 AC、BC、單 C。早班指 AB、單 A、單 B，每日算一次，排除 AC 的 A 與 BC 的 B。', '',
@@ -142,6 +142,29 @@ function combinedTables(runs) {
   if (!weekly.length) lines.push('', '沒有可統計的成功週樣本，各週指標為 N/A。');
   return {lines, monthly, weekly};
 }
+function weeklySinglesTable(runs) {
+  const groups = new Map();
+  for (const run of runs) for (const person of run.final.measure.staff) {
+    for (const [index, week] of (person.weekly || []).entries()) {
+      if (!Number.isFinite(week.voluntarySingle) || !Number.isFinite(week.involuntarySingle)) continue;
+      const calendarWeek = run.final.weekly.find(p => p.id === person.id).weeks[index];
+      const key = `| ${run.month} | ${week.week} | ${calendarWeek.shortWeek ? '短週' : '完整週'} | ${person.id} |`;
+      if (!groups.has(key)) groups.set(key, {samples: 0, voluntary: 0, involuntary: 0});
+      const totals = groups.get(key);
+      totals.samples++;
+      totals.voluntary += week.voluntarySingle;
+      totals.involuntary += week.involuntarySingle;
+    }
+  }
+  const lines = ['### 每人每週單節班平均', '',
+    '採補班前班表。成功樣本的零次照常計入；歷史紀錄若無逐週單節數則排除。', '',
+    '| 月份 | 週次 | 週型 | 員工 | 有效 n | 非自願單節平均 | 自願單節平均 |', '|---|---:|---|---|---:|---:|---:|'];
+  for (const [key, totals] of [...groups].sort(([a], [b]) => a.localeCompare(b))) {
+    lines.push(`${key} ${totals.samples} | ${number(totals.involuntary / totals.samples)} | ${number(totals.voluntary / totals.samples)} |`);
+  }
+  if (!groups.size) lines.push('', '無有效資料。');
+  return lines;
+}
 function outcomeTables(group) {
   const runs = group.successful;
   const ids = runs[0]?.final.measure.staff.map(s => s.id) || STAFF.map(s => s.id);
@@ -198,7 +221,7 @@ async function summarize(directory) {
   const lines = ['# 擴大排班測試結果', '',
     `規模：${metadata.size}；完整：${metadata.completed}；前導通過：${metadata.pilotPassed}。`, '',
     `狀態：${JSON.stringify(metadata.statuses)}。缺少 ${metadata.missing.length} 組；待調查 ${metadata.invalid.length} 組。`, '',
-    '公平性優先序維持月非自願單節 → 月工時達成率 → 每週 AC → 每週 BC／AB 同級。', '',
+    '公平性依序比較月非自願單節 → 月工時達成率 → 個人每週非自願單節集中程度 → 每週 AC → 每週 BC／AB 同級。', '',
     '輸入衝突仍保留在成功率分母；負向案例獨立列示。新月份／新樣本不與歷史 400 組直接宣稱前後改善。', '',
     '雲端前導通過後仍需成本回報與使用者選定規模，才執行正式批。', '',
     ...READING_GUIDE, '## 各情境執行狀態與最終公平性', '',
@@ -241,7 +264,7 @@ async function summarize(directory) {
   }
   const combined = combinedTables(allSuccessful);
   const combinedGaps = weekdayGapTables(allSuccessful);
-  lines.push('', ...combined.lines, '', '## 綜合全部情境：平日空班稽核', '', ...combinedGaps.lines, '', '## 全部情境的失敗原因', '', ...failureTables(failures), '',
+  lines.push('', ...combined.lines, '', ...weeklySinglesTable(allSuccessful), '', '## 綜合全部情境：平日空班稽核', '', ...combinedGaps.lines, '', '## 全部情境的失敗原因', '', ...failureTables(failures), '',
     '## 最終週六 AB 結構獨立驗證', '',
     '| 月份／情境／模式 | 最終稽核日期數 | 未達最大可行 AB 日期數 |', '|---|---:|---:|', ...auditRows, '',
     '## 效率與搜尋界限', '',
@@ -262,4 +285,4 @@ if (require.main === module) {
   if (!args['--input']) throw new Error('--input is required');
   summarize(path.resolve(args['--input'])).catch(error => { console.error(error); process.exitCode = 1; });
 }
-module.exports = {summarize, weeklyCell, combinedTables, failureTables, weekdayGapTables};
+module.exports = {summarize, weeklyCell, combinedTables, failureTables, weekdayGapTables, weeklySinglesTable};

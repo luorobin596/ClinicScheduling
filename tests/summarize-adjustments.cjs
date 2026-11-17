@@ -15,8 +15,8 @@ const metrics = (runs, stage) => {
  return [
   avg(measurements.map(m => spread(m.staff.map(p => p.involuntarySingle)))),
   avg(measurements.map(m => spread(m.staff.map(p => p.attainment * 100)))),
-  avg(measurements.map(m => m.score[4])), avg(measurements.map(m => m.score[5])),
-  avg(measurements.map(m => m.score[7])), avg(measurements.map(m => m.score[8]))
+  avg(measurements.map(m => m.score.at(-6))), avg(measurements.map(m => m.score.at(-5))),
+  avg(measurements.map(m => m.score.at(-3))), avg(measurements.map(m => m.score.at(-2)))
  ];
 };
 let out = `# 排班修改與 400 次離線模擬結果\n\n日期：2026-10-19。月份：2026 年 11 月；無額外國定假日；五位 FT；骨科平日 A/B/C 上限各 3 人，週六 A3/B2；小兒固定班／代班不計入骨科人數。\n\n正式程式已在本機完成修改，尚未上傳或更新線上 Apps Script Library。\n\n## 實作結果\n\n保留原初始排班及正反序輪轉，再依序執行最低骨科覆蓋修補、受優先序約束的公平性交換、完整驗證，才寫出班表。修補優先移班／交換，最後才新增。公平性階段維持修補後每個日期／班別／站別人數。\n\n公平性優先序：月非自願單節 → 月工時達成率 → 每週 AC → 每週 BC／AB 同級。每級先看差距，再看離散程度；低優先改善不能抵銷高優先惡化。指定單節且其餘時段休假不計非自願單節，小兒形成的單節照計。指定雙班鎖定且納入週班型。\n\n逐人來源與原始意願分開保存；固定班及小兒班不可移動。失敗還原 FT_WINDOW_CLOSED，保留首次截止時間並可重試；後端拒收關閉後的舊頁提交。來源／班表驗證在刪除舊輸出前完成，寫入失敗揭露可能部分寫入及舊資料快照，不承諾跨 Sheet 交易回復。\n\n## 模型與抽樣\n\n- 一般員工月休 9 天：5 個週日＋8 個半天額度。全天休扣 2 且 ABC 全禁；半天休扣 1，指定一班、其餘禁排。\n- 只休全天：每人另休 4 個全天。混合：每人都有全天與半天，總額度仍為 8。\n- 連休一週：一名員工完整休週日至週六，其中 6 個營業日全休，因此月休 11 天；其餘四人 9 天。該員工應排工時 152 小時，其餘為 168 小時。未將一週另加在原本 9 天上。\n- 原同批 100 組沿用先前凍結的 seed 與意願，未排除其中的失敗案例。\n- 新增三情境先按固定 seed 產生意願，僅依原始意願／固定小兒班檢查當日可行性，選出 100 組後先存檔再執行修補。排班後失敗不能換樣本；因此新增情境成功率是「通過輸入篩檢者」的結果。\n\n## 最低覆蓋與限制驗證\n\n| 情境 | 正式樣本 | 初始最低覆蓋不合格 | 最終合格 | 失敗 | 前置拒絕輸入 |\n|---|---:|---:|---:|---:|---:|\n`;

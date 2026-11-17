@@ -12,7 +12,7 @@ function weekdayGaps(context, staff, requests) {
   const gaps = [];
   for (const day of context.days.filter(weekday)) for (const person of staff) {
     const fullyOff = Object.keys(day.slots).every(s => off.has(JSON.stringify([day.date, s, person.id])));
-    if (!fullyOff && !hasWork(day, person.id)) gaps.push({date: day.date, id: person.id});
+    if (!fullyOff && !day.systemRest?.includes(person.id) && !hasWork(day, person.id)) gaps.push({date: day.date, id: person.id});
   }
   return gaps;
 }

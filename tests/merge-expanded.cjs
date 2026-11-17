@@ -79,11 +79,11 @@ function merge({manifestFile, input, out}) {
     if (!groups[key]) groups[key] = {count: 0, statuses: {}};
     groups[key].count++;
     groups[key].statuses[run.status] = (groups[key].statuses[run.status] || 0) + 1;
-    if (['ERROR', 'SEARCH_LIMIT', 'COVERAGE_UNRESOLVED', 'WORKDAY_UNRESOLVED'].includes(run.status)) invalid.push(id);
+    if (['ERROR', 'SEARCH_LIMIT', 'COVERAGE_UNRESOLVED', 'WORKDAY_UNRESOLVED', 'SYSTEM_REST_UNRESOLVED'].includes(run.status)) invalid.push(id);
     if (manifest.inputPolicy === 'COORDINATED_ORIGINAL_INTENT_V2' && !fixture.scenario.expectedConflict && run.status === 'INPUT_CONFLICT') invalid.push(id);
     if (manifest.inputPolicy === 'COORDINATED_ORIGINAL_INTENT_V2' && fixture.scenario.expectedConflict &&
       run.status === 'EXPECTED_CONFLICT' && run.error?.details?.date !== fixture.scenario.saturday) invalid.push(id);
-    if (!['VALID', 'INPUT_CONFLICT', 'EXPECTED_CONFLICT', 'ERROR', 'SEARCH_LIMIT', 'COVERAGE_UNRESOLVED', 'WORKDAY_UNRESOLVED'].includes(run.status)) unknownStatuses.push(id);
+    if (!['VALID', 'INPUT_CONFLICT', 'EXPECTED_CONFLICT', 'ERROR', 'SEARCH_LIMIT', 'COVERAGE_UNRESOLVED', 'WORKDAY_UNRESOLVED', 'SYSTEM_REST_UNRESOLVED'].includes(run.status)) unknownStatuses.push(id);
     if ((run.scenario.expectedConflict && run.status !== 'EXPECTED_CONFLICT') ||
       (!run.scenario.expectedConflict && run.status === 'EXPECTED_CONFLICT')) invalid.push(id);
     fs.appendFileSync(temporary, zlib.gzipSync(JSON.stringify(compact(run)) + '\n'));

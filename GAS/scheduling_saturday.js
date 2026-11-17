@@ -88,6 +88,8 @@ var SaturdayAllocator = {
         voluntarySingle: person.voluntarySingle + after.voluntarySingle - before.voluntarySingle,
         involuntarySingle: person.involuntarySingle + after.involuntarySingle - before.involuntarySingle });
       next.weekly[weekIndex] = Object.assign({}, person.weekly[weekIndex]);
+      next.weekly[weekIndex].voluntarySingle += after.voluntarySingle - before.voluntarySingle;
+      next.weekly[weekIndex].involuntarySingle += after.involuntarySingle - before.involuntarySingle;
       ['AC', 'BC', 'AB'].forEach(pattern => {
         next.weekly[weekIndex][pattern] += (after.pattern === pattern ? 1 : 0) - (before.pattern === pattern ? 1 : 0);
       });

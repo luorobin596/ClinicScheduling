@@ -8,7 +8,7 @@
 
 2026-10-21 使用者已選擇 5,000 組、同時 4 批。新增 `.github/workflows/formal-simulation-5000.yml`，網頁名稱為 **Clinic scheduling - 5000 cases (4 parallel)**，只手動啟動。參數記錄在 `.github/formal-test-plan.json`，不提供 10,000 組選項。推送由使用者執行；這次設定工作沒有啟動雲端測試。
 
-推送到預設分支後：Actions → Clinic scheduling - 5000 cases (4 parallel) → Run workflow。流程會讀取通過的前導 run **39562995320／attempt 1** 的 `pilot-report` 產物，檢查原始輸入政策、引擎／工具雜湊、時區與搜尋預算，並使用該前導的精確 Node 版本。若不符或前導產物已過期，明確中止，需先重跑前導並更新計畫的 run ID。
+先在要測試的版本手動執行 **Clinic scheduling - 200-case pilot**。確認通過並在 Artifacts 找到 `pilot-report-<run ID>-<attempt>`。在產物保留期間，從同一版本開啟 **Clinic scheduling - 5000 cases (4 parallel)** → **Run workflow**，填入 `pilot_run_id` 與 `pilot_attempt`，首次執行的 attempt 通常為 `1`。兩欄皆留空會沿用計畫檔的歷史綁定。正式流程會核對輸入政策、引擎／工具雜湊、時區、Node 版本與搜尋預算。產物遺失或過期時，重新執行前導並用新編號啟動一筆正式測試。
 
 驗證通過才生成一次 5,000 組輸入，並核對前導 200 組確實為內容未變的子集。分為 **50 批，每批 100 組，max-parallel=4**。既有評估入口的成本門檻仍保留：套件中的 `cost-estimate.json` 是本次對話已審閱的規劃估算（來源有明確標記），綁定前導 identity；不是假造逐 job 實測帳單。約 400 個運算分鐘的預算是規劃值，不是 GitHub 帳號的強制支出上限。
 
