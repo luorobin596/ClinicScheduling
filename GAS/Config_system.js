@@ -2,7 +2,7 @@
 const SATURDAY_ALLOCATION_OPTIONS = { maxCandidatesPerDay: 20000, timeLimitMs: 2000 };
 
 // Bounded post-processing; tunable after Apps Script runtime verification.
-const SCHEDULE_SEARCH_OPTIONS = { maxCandidates: 60000, maxAccepted: 200, timeLimitMs: 10000 };
+const SCHEDULE_SEARCH_OPTIONS = { maxCandidates: 40000, maxAccepted: 200, timeLimitMs: 10000 };
 
 /**
  * config.gs
